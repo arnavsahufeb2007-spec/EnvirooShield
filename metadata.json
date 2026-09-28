@@ -1,0 +1,6 @@
+{
+  "name": "EnviroShield Atmospheric Intelligence",
+  "description": "High-precision planetary atmospheric computation core, 48-hour photochemical forecasting, and zero-blackbox physical risk provenance platform.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}
