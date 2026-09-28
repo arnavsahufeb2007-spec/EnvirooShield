@@ -5,6 +5,8 @@ export type NavTab =
   | 'geospatial-grid-stations'
   | 'explainable-risk-provenance';
 
+export type UnitSystem = 'standard' | 'scientific';
+
 export type StationId = string;
 
 export interface StationData {

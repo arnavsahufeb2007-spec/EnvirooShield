@@ -38,8 +38,8 @@ export const ExportModal: React.FC<ExportModalProps> = ({
         station: currentStation,
         timezone: currentStation.timezone || 'UTC',
         timezone_abbr: currentStation.timezoneAbbr || 'UTC',
-        kernel: 'EnviroForecaster-v1.4-RidgeAR',
-        merkle_root: '0x7f2c418e9d301b2a95c4ef93108c10fa89',
+        engine: 'EnviroShield Atmospheric Dispersion Core',
+        attribution: 'Open-Meteo & Copernicus CAMS Ingestion',
         projection_matrix: HOURLY_FORECAST_DATA
       }, null, 2);
     } else {
@@ -81,36 +81,36 @@ export const ExportModal: React.FC<ExportModalProps> = ({
   };
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-sm animate-in fade-in duration-150">
-      <div className="bg-[#191c21] border border-[#272a30] rounded-lg max-w-lg w-full p-6 shadow-2xl flex flex-col gap-5">
-        <div className="flex items-center justify-between pb-3 border-b border-[#272a30]">
+    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-xl animate-fade-in">
+      <div className="bg-slate-950/90 border border-white/[0.12] rounded-2xl max-w-lg w-full p-6 shadow-2xl backdrop-blur-2xl flex flex-col gap-5">
+        <div className="flex items-center justify-between pb-3 border-b border-white/[0.08]">
           <div className="flex items-center gap-2">
-            <span className="material-symbols-outlined text-[#38bdf8] text-[22px]">sim_card_download</span>
-            <h3 className="font-sans text-[18px] font-semibold text-[#e1e2ea]">Export Atmospheric Telemetry</h3>
+            <span className="material-symbols-outlined text-sky-400 text-[22px]">sim_card_download</span>
+            <h3 className="font-sans text-[18px] font-bold text-white tracking-tight">Export Atmospheric Telemetry</h3>
           </div>
-          <button onClick={onClose} className="text-[#87929a] hover:text-white transition-colors">
-            <span className="material-symbols-outlined text-[20px]">close</span>
+          <button onClick={onClose} className="w-8 h-8 rounded-xl bg-white/[0.04] hover:bg-white/[0.1] text-slate-400 hover:text-white flex items-center justify-center transition-all cursor-pointer border border-white/[0.08] hover:border-white/[0.2]">
+            <span className="material-symbols-outlined text-[18px]">close</span>
           </button>
         </div>
 
         <div className="flex flex-col gap-4 font-sans text-[13px]">
           {/* Station readout */}
-          <div className="bg-[#111319] p-3 rounded border border-[#272a30] flex items-center justify-between">
+          <div className="bg-white/[0.03] p-3.5 rounded-xl border border-white/[0.08] flex items-center justify-between backdrop-blur-md">
             <div className="flex flex-col">
-              <span className="font-mono text-[10px] text-[#87929a] uppercase">Active Target Node</span>
-              <span className="font-mono text-[13px] font-semibold text-[#8ed5ff]">{currentStation.name}</span>
-              <span className="font-mono text-[11px] text-[#cbd5e1] mt-0.5">
+              <span className="font-mono text-[10px] text-slate-400 uppercase tracking-wider font-semibold">Active Target Node</span>
+              <span className="font-mono text-[13px] font-bold text-sky-300">{currentStation.name}</span>
+              <span className="font-mono text-[11px] text-slate-400 mt-0.5">
                 Timezone: {currentStation.timezone || 'UTC'} ({currentStation.timezoneAbbr || 'LOCAL'})
               </span>
             </div>
-            <span className="font-mono text-[11px] text-[#44e2cd] bg-[#1d2025] px-2 py-0.5 rounded border border-[#272a30]">
+            <span className="font-mono text-[11px] text-teal-300 bg-teal-400/10 px-2.5 py-1 rounded-full border border-teal-400/30 font-semibold">
               PM2.5: {currentStation.pm25} µg/m³
             </span>
           </div>
 
           {/* Format selection */}
-          <div className="flex flex-col gap-1.5">
-            <label className="font-mono text-[11px] text-[#bdc8d1] uppercase tracking-wider">Telemetry Serialization Format</label>
+          <div className="flex flex-col gap-2">
+            <label className="font-mono text-[11px] text-slate-400 uppercase tracking-wider font-semibold">Telemetry Serialization Format</label>
             <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
               {[
                 { id: 'parquet', label: 'Parquet (Snappy)', badge: 'Recommended' },
@@ -122,22 +122,22 @@ export const ExportModal: React.FC<ExportModalProps> = ({
                   key={f.id}
                   type="button"
                   onClick={() => setFormat(f.id as any)}
-                  className={`p-2.5 rounded text-left border transition-all ${
+                  className={`p-2.5 rounded-xl text-left border transition-all duration-200 cursor-pointer backdrop-blur-md ${
                     format === f.id
-                      ? 'bg-[#38bdf8]/15 border-[#38bdf8] text-[#8ed5ff]'
-                      : 'bg-[#111319] border-[#272a30] text-[#bdc8d1] hover:border-[#3e484f]'
+                      ? 'bg-sky-500/20 border-sky-400 text-sky-200 shadow-[0_2px_12px_rgba(56,189,248,0.25)] scale-[1.02]'
+                      : 'bg-white/[0.03] border-white/[0.08] text-slate-300 hover:text-white hover:border-white/[0.2] hover:bg-white/[0.07] hover:-translate-y-0.5 hover:scale-[1.02]'
                   }`}
                 >
                   <div className="font-mono text-[11px] font-semibold">{f.label}</div>
-                  <div className="text-[10px] text-[#87929a] mt-0.5">{f.badge}</div>
+                  <div className="text-[10px] text-slate-400 mt-0.5">{f.badge}</div>
                 </button>
               ))}
             </div>
           </div>
 
           {/* Horizon Selection */}
-          <div className="flex flex-col gap-1.5">
-            <label className="font-mono text-[11px] text-[#bdc8d1] uppercase tracking-wider">Temporal Projection Horizon</label>
+          <div className="flex flex-col gap-2">
+            <label className="font-mono text-[11px] text-slate-400 uppercase tracking-wider font-semibold">Temporal Projection Horizon</label>
             <div className="grid grid-cols-3 gap-2">
               {[
                 { id: '24h', label: 'T+0 to T+24h', desc: 'Short-term acute' },
@@ -148,14 +148,14 @@ export const ExportModal: React.FC<ExportModalProps> = ({
                   key={t.id}
                   type="button"
                   onClick={() => setTimeRange(t.id as any)}
-                  className={`p-2 rounded text-left border transition-all ${
+                  className={`p-2.5 rounded-xl text-left border transition-all duration-200 cursor-pointer backdrop-blur-md ${
                     timeRange === t.id
-                      ? 'bg-[#44e2cd]/15 border-[#44e2cd] text-[#44e2cd]'
-                      : 'bg-[#111319] border-[#272a30] text-[#bdc8d1] hover:border-[#3e484f]'
+                      ? 'bg-teal-500/20 border-teal-400 text-teal-200 shadow-[0_2px_12px_rgba(20,184,166,0.25)] scale-[1.02]'
+                      : 'bg-white/[0.03] border-white/[0.08] text-slate-300 hover:text-white hover:border-white/[0.2] hover:bg-white/[0.07] hover:-translate-y-0.5 hover:scale-[1.02]'
                   }`}
                 >
                   <div className="font-mono text-[11px] font-semibold">{t.label}</div>
-                  <div className="text-[10px] text-[#87929a]">{t.desc}</div>
+                  <div className="text-[10px] text-slate-400">{t.desc}</div>
                 </button>
               ))}
             </div>
@@ -163,23 +163,23 @@ export const ExportModal: React.FC<ExportModalProps> = ({
 
           {/* Checkboxes */}
           <div className="flex flex-col gap-2 pt-1">
-            <label className="flex items-center gap-2 text-[#bdc8d1] cursor-pointer">
+            <label className="flex items-center gap-2.5 text-slate-300 cursor-pointer hover:text-white transition-colors">
               <input
                 type="checkbox"
                 checked={includeCovariates}
                 onChange={(e) => setIncludeCovariates(e.target.checked)}
-                className="w-4 h-4 rounded bg-[#111319] border-[#272a30] accent-[#38bdf8]"
+                className="w-4 h-4 rounded bg-white/[0.05] border-white/[0.2] accent-sky-400 cursor-pointer"
               />
-              <span>Include ECMWF IFS-0.05° Meteorological Covariates (PBL, U/V wind, RH)</span>
+              <span className="text-[12px]">Include ECMWF IFS-0.05° Meteorological Covariates (PBL, U/V wind, RH)</span>
             </label>
           </div>
         </div>
 
-        <div className="flex items-center justify-between pt-4 border-t border-[#272a30]">
+        <div className="flex items-center justify-between pt-4 border-t border-white/[0.08]">
           <button
             onClick={handleCopyClipboard}
             type="button"
-            className="px-3 py-1.5 rounded bg-[#272a30] hover:bg-[#32353b] text-[#e1e2ea] font-mono text-[11px] flex items-center gap-1.5 transition-colors cursor-pointer"
+            className="px-3.5 py-2 rounded-xl bg-white/[0.04] hover:bg-white/[0.09] border border-white/[0.08] hover:border-white/[0.2] text-slate-200 font-mono text-[11px] flex items-center gap-1.5 transition-all duration-200 hover:-translate-y-0.5 hover:scale-[1.02] cursor-pointer"
           >
             <span className="material-symbols-outlined text-[15px]">content_copy</span>
             <span>Copy Stream</span>
@@ -189,14 +189,14 @@ export const ExportModal: React.FC<ExportModalProps> = ({
             <button
               onClick={onClose}
               type="button"
-              className="px-3 py-1.5 rounded bg-transparent hover:bg-[#272a30] text-[#bdc8d1] font-sans text-[12px] transition-colors"
+              className="px-3.5 py-2 rounded-xl bg-transparent hover:bg-white/[0.06] text-slate-400 hover:text-white font-sans text-[12px] transition-all cursor-pointer"
             >
               Cancel
             </button>
             <button
               onClick={handleDownload}
               type="button"
-              className="px-4 py-1.5 rounded bg-[#38bdf8] hover:bg-[#8ed5ff] text-[#004965] font-sans text-[13px] font-semibold flex items-center gap-1.5 shadow transition-colors cursor-pointer"
+              className="px-4 py-2 rounded-xl bg-gradient-to-r from-sky-400 to-sky-500 hover:from-sky-300 hover:to-sky-400 text-slate-950 font-sans text-[13px] font-bold flex items-center gap-1.5 shadow-[0_2px_12px_rgba(56,189,248,0.4)] hover:shadow-[0_4px_20px_rgba(56,189,248,0.5)] transition-all duration-200 hover:-translate-y-0.5 hover:scale-[1.02] cursor-pointer"
             >
               <span className="material-symbols-outlined text-[16px]">download</span>
               <span>Download File</span>

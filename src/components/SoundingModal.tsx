@@ -11,51 +11,53 @@ export const SoundingModal: React.FC<SoundingModalProps> = ({ isOpen, onClose, s
   if (!isOpen) return null;
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-sm animate-in fade-in duration-150">
-      <div className="bg-[#191c21] border border-[#272a30] rounded-lg max-w-4xl w-full p-6 shadow-2xl flex flex-col gap-5 max-h-[90vh] overflow-y-auto">
-        <div className="flex items-center justify-between pb-3 border-b border-[#272a30]">
-          <div className="flex items-center gap-2">
-            <span className="material-symbols-outlined text-[#8ed5ff] text-[22px]">vertical_shades_closed</span>
+    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-xl animate-fade-in">
+      <div className="bg-slate-950/90 border border-white/[0.12] rounded-2xl max-w-4xl w-full p-6 shadow-2xl backdrop-blur-2xl flex flex-col gap-5 max-h-[90vh] overflow-y-auto">
+        <div className="flex items-center justify-between pb-3 border-b border-white/[0.08]">
+          <div className="flex items-center gap-2.5">
+            <div className="w-8 h-8 rounded-xl bg-sky-400/15 text-sky-400 flex items-center justify-center border border-sky-400/30">
+              <span className="material-symbols-outlined text-[20px]">vertical_shades_closed</span>
+            </div>
             <div>
-              <h3 className="font-sans text-[18px] font-semibold text-[#e1e2ea]">
+              <h3 className="font-sans text-[18px] font-bold text-white tracking-tight">
                 Full Vertical Atmospheric Radiosonde Sounding
               </h3>
-              <span className="font-mono text-[11px] text-[#87929a]">
+              <span className="font-mono text-[11px] text-slate-400">
                 Station {station.code} • WMO Id: 42182 • Sensor: Vaisala RS41-SGP
               </span>
             </div>
           </div>
-          <button onClick={onClose} className="text-[#87929a] hover:text-white transition-colors">
-            <span className="material-symbols-outlined text-[20px]">close</span>
+          <button onClick={onClose} className="w-8 h-8 rounded-xl bg-white/[0.04] hover:bg-white/[0.1] text-slate-400 hover:text-white flex items-center justify-center transition-all cursor-pointer border border-white/[0.08] hover:border-white/[0.2]">
+            <span className="material-symbols-outlined text-[18px]">close</span>
           </button>
         </div>
 
         {/* Top Sounding Parameters Strip */}
-        <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 bg-[#111319] p-3 rounded border border-[#272a30] font-mono text-[11px]">
+        <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 bg-white/[0.03] p-3.5 rounded-xl border border-white/[0.08] font-mono text-[11px] backdrop-blur-md">
           <div>
-            <span className="text-[#87929a] block">INVERSION BASE:</span>
-            <span className="text-[#ffb4ab] font-bold text-[14px]">620 m ASL</span>
+            <span className="text-slate-400 block text-[10px] font-semibold uppercase">INVERSION BASE:</span>
+            <span className="text-rose-300 font-bold text-[14px]">620 m ASL</span>
           </div>
           <div>
-            <span className="text-[#87929a] block">CAPE (CONVECTIVE):</span>
-            <span className="text-[#44e2cd] font-bold text-[14px]">420 J/kg</span>
+            <span className="text-slate-400 block text-[10px] font-semibold uppercase">CAPE (CONVECTIVE):</span>
+            <span className="text-teal-300 font-bold text-[14px]">420 J/kg</span>
           </div>
           <div>
-            <span className="text-[#87929a] block">CIN (INHIBITION):</span>
-            <span className="text-[#8ed5ff] font-bold text-[14px]">-182 J/kg</span>
+            <span className="text-slate-400 block text-[10px] font-semibold uppercase">CIN (INHIBITION):</span>
+            <span className="text-sky-300 font-bold text-[14px]">-182 J/kg</span>
           </div>
           <div>
-            <span className="text-[#87929a] block">LCL (CONDENSATION):</span>
-            <span className="text-[#e1e2ea] font-bold text-[14px]">780 m AGL</span>
+            <span className="text-slate-400 block text-[10px] font-semibold uppercase">LCL (CONDENSATION):</span>
+            <span className="text-slate-200 font-bold text-[14px]">780 m AGL</span>
           </div>
         </div>
 
         {/* Skew-T Sounding SVG Chart */}
-        <div className="relative w-full h-80 bg-[#0b0e13] rounded border border-[#272a30] p-4 flex flex-col justify-between overflow-hidden">
+        <div className="relative w-full h-80 bg-slate-950/80 rounded-xl border border-white/[0.08] p-4 flex flex-col justify-between overflow-hidden shadow-inner">
           <svg className="w-full h-full" viewBox="0 0 800 320" preserveAspectRatio="none">
             <defs>
               <pattern id="skewGrid" width="80" height="40" patternUnits="userSpaceOnUse">
-                <path d="M 80 0 L 0 0 0 40" fill="none" stroke="#272a30" strokeWidth="0.8" strokeDasharray="2,2"/>
+                <path d="M 80 0 L 0 0 0 40" fill="none" stroke="rgba(255,255,255,0.06)" strokeWidth="0.8" strokeDasharray="2,2"/>
               </pattern>
             </defs>
             <rect width="800" height="320" fill="url(#skewGrid)" />
@@ -119,26 +121,26 @@ export const SoundingModal: React.FC<SoundingModalProps> = ({ isOpen, onClose, s
             </g>
           </svg>
 
-          <div className="flex items-center justify-between text-[#bdc8d1] font-mono text-[11px] px-2 bg-[#111319]/80 py-1 rounded">
+          <div className="flex items-center justify-between text-slate-300 font-mono text-[11px] px-3 bg-white/[0.04] py-1.5 rounded-lg border border-white/[0.05]">
             <span className="flex items-center gap-1.5">
-              <span className="w-3 h-1 bg-[#ffb4ab] inline-block"></span> Dry Bulb Temperature (T)
+              <span className="w-3 h-1 bg-rose-400 inline-block"></span> Dry Bulb Temperature (T)
             </span>
             <span className="flex items-center gap-1.5">
-              <span className="w-3 h-1 bg-[#44e2cd] inline-block border-b border-dashed"></span> Dew Point (Td)
+              <span className="w-3 h-1 bg-teal-400 inline-block border-b border-dashed"></span> Dew Point (Td)
             </span>
-            <span className="text-[#8ed5ff]">Wind Vector Shear Column</span>
+            <span className="text-sky-300">Wind Vector Shear Column</span>
           </div>
         </div>
 
         {/* Diagnostic Assessment Text */}
-        <div className="bg-[#111319] p-4 rounded border border-[#272a30] text-[13px] leading-relaxed text-[#bdc8d1]">
+        <div className="bg-white/[0.03] p-4 rounded-xl border border-white/[0.08] text-[13px] leading-relaxed text-slate-300 backdrop-blur-md">
           <strong className="text-white">Synoptic Sounding Verdict:</strong> Extreme radiational cooling in the nocturnal boundary layer created an intense thermal inversion lid at 620m AMSL with positive lapse rate (+3.2°C per 100m). Mechanical turbulence is severely dampened (Ri = 0.42 &gt; critical threshold 0.25). Particulate matter remains locked near the surface until convective boundary layer growth initiates after 11:30 UTC.
         </div>
 
-        <div className="flex justify-end">
+        <div className="flex justify-end pt-2 border-t border-white/[0.08]">
           <button
             onClick={onClose}
-            className="px-4 py-1.5 rounded bg-[#38bdf8] text-[#004965] font-semibold text-[13px] hover:bg-[#8ed5ff] transition-colors"
+            className="px-5 py-2.5 rounded-xl bg-gradient-to-r from-sky-400 to-sky-500 hover:from-sky-300 hover:to-sky-400 text-slate-950 font-bold text-[13px] shadow-[0_2px_12px_rgba(56,189,248,0.4)] hover:shadow-[0_4px_20px_rgba(56,189,248,0.5)] transition-all duration-200 hover:-translate-y-0.5 hover:scale-[1.02] cursor-pointer"
           >
             Close Sounding
           </button>

@@ -109,23 +109,23 @@ export const DemoScenariosModal: React.FC<DemoScenariosModalProps> = ({
   if (!isOpen) return null;
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-4 bg-black/80 backdrop-blur-md animate-fade-in overflow-y-auto">
-      <div className="relative w-full max-w-3xl bg-[#11141c] border border-[#272a30] rounded-2xl shadow-2xl overflow-hidden flex flex-col my-auto max-h-[92vh]">
+    <div className="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-4 bg-black/80 backdrop-blur-xl animate-fade-in overflow-y-auto">
+      <div className="relative w-full max-w-3xl bg-slate-950/90 border border-white/[0.12] rounded-2xl shadow-2xl backdrop-blur-2xl overflow-hidden flex flex-col my-auto max-h-[92vh]">
         
         {/* Header */}
-        <div className="flex items-center justify-between px-5 py-4 border-b border-[#272a30] bg-[#161a24]">
+        <div className="flex items-center justify-between px-5 py-4 border-b border-white/[0.08] bg-white/[0.03]">
           <div className="flex items-center gap-2.5">
-            <div className="w-8 h-8 rounded-lg bg-[#38bdf8]/15 text-[#38bdf8] flex items-center justify-center">
+            <div className="w-8 h-8 rounded-xl bg-amber-400/15 text-amber-400 flex items-center justify-center border border-amber-400/30">
               <span className="material-symbols-outlined text-[20px]">science</span>
             </div>
             <div>
               <h2 className="font-sans text-[17px] font-bold text-white tracking-tight flex items-center gap-2">
                 Interactive Atmospheric Demo Scenarios
-                <span className="font-mono text-[10px] text-[#38bdf8] bg-[#38bdf8]/15 px-2 py-0.5 rounded border border-[#38bdf8]/30 font-bold">
+                <span className="font-mono text-[10px] text-amber-300 bg-amber-400/15 px-2 py-0.5 rounded-full border border-amber-400/30 font-bold">
                   FOR EVALUATORS & DEMOS
                 </span>
               </h2>
-              <p className="font-sans text-[11px] text-[#87929a]">
+              <p className="font-sans text-[11px] text-slate-400">
                 Test distinct global atmospheric conditions with 1 click to see live physics, timezones, and health reactions
               </p>
             </div>
@@ -133,7 +133,7 @@ export const DemoScenariosModal: React.FC<DemoScenariosModalProps> = ({
 
           <button
             onClick={onClose}
-            className="w-8 h-8 rounded-lg bg-[#1f2430] hover:bg-[#272a30] text-[#87929a] hover:text-white flex items-center justify-center transition-colors cursor-pointer"
+            className="w-8 h-8 rounded-xl bg-white/[0.04] hover:bg-white/[0.1] text-slate-400 hover:text-white flex items-center justify-center transition-all cursor-pointer border border-white/[0.08] hover:border-white/[0.2]"
             aria-label="Close modal"
           >
             <span className="material-symbols-outlined text-[18px]">close</span>
@@ -145,53 +145,53 @@ export const DemoScenariosModal: React.FC<DemoScenariosModalProps> = ({
           {DEMO_SCENARIOS.map((sc) => (
             <div
               key={sc.id}
-              className={`p-4 rounded-xl border ${sc.borderColor} bg-[#141822] hover:bg-[#1a202c] transition-all flex flex-col sm:flex-row sm:items-center justify-between gap-4 group cursor-pointer`}
+              className="p-4.5 rounded-2xl border border-white/[0.08] bg-white/[0.03] backdrop-blur-md hover:bg-white/[0.07] hover:border-white/[0.22] hover:-translate-y-1 hover:shadow-[0_8px_24px_rgba(0,0,0,0.3)] transition-all duration-200 flex flex-col sm:flex-row sm:items-center justify-between gap-4 group cursor-pointer"
               onClick={() => {
                 onSelectScenario(sc);
                 onClose();
               }}
             >
               <div className="flex items-start gap-3.5">
-                <span className="text-3xl mt-0.5 shrink-0">{sc.flag}</span>
+                <span className="text-3xl mt-0.5 shrink-0 group-hover:scale-110 transition-transform">{sc.flag}</span>
                 <div className="flex flex-col">
                   <div className="flex items-center gap-2 flex-wrap">
-                    <span className="font-sans font-bold text-[15px] text-white group-hover:text-[#38bdf8] transition-colors">
+                    <span className="font-sans font-bold text-[15px] text-white group-hover:text-sky-300 transition-colors">
                       {sc.title}
                     </span>
-                    <span className={`font-mono text-[10px] font-bold px-2 py-0.5 rounded border ${sc.bgColor} ${sc.color} ${sc.borderColor}`}>
+                    <span className={`font-mono text-[10px] font-bold px-2 py-0.5 rounded-full border ${sc.bgColor} ${sc.color} ${sc.borderColor}`}>
                       {sc.expectedAqi}
                     </span>
                   </div>
-                  <span className="font-sans text-[12px] text-[#8ed5ff] font-medium mt-0.5">
+                  <span className="font-sans text-[12px] text-sky-400 font-medium mt-0.5">
                     Location: {sc.cityName}
                   </span>
-                  <p className="font-sans text-[12px] text-[#cbd5e1] mt-1 leading-snug">
-                    <strong>Atmospheric Phenomenon:</strong> {sc.phenomenon}
+                  <p className="font-sans text-[12px] text-slate-300 mt-1 leading-snug">
+                    <strong className="text-white">Atmospheric Phenomenon:</strong> {sc.phenomenon}
                   </p>
-                  <span className="font-sans text-[11px] text-[#87929a] mt-1">
+                  <span className="font-sans text-[11px] text-slate-400 mt-1">
                     {sc.keyPhysics}
                   </span>
                 </div>
               </div>
 
               <button
-                className="px-3.5 py-1.5 rounded-lg bg-[#1f2633] group-hover:bg-[#38bdf8] group-hover:text-[#00354a] text-white font-sans text-[12px] font-bold transition-all shrink-0 flex items-center gap-1 self-start sm:self-center shadow-sm"
+                className="px-4 py-2 rounded-xl bg-white/[0.06] border border-white/[0.1] group-hover:bg-gradient-to-r group-hover:from-sky-400 group-hover:to-sky-500 group-hover:text-slate-950 text-slate-200 font-sans text-[12px] font-bold transition-all duration-200 shrink-0 flex items-center gap-1.5 self-start sm:self-center shadow-xs group-hover:shadow-[0_4px_16px_rgba(56,189,248,0.4)] group-hover:scale-105"
               >
                 <span>Launch Scenario</span>
-                <span className="material-symbols-outlined text-[15px]">arrow_forward</span>
+                <span className="material-symbols-outlined text-[15px] transition-transform group-hover:translate-x-1">arrow_forward</span>
               </button>
             </div>
           ))}
         </div>
 
         {/* Footer */}
-        <div className="px-5 py-3.5 bg-[#161a24] border-t border-[#272a30] flex items-center justify-between">
-          <span className="font-mono text-[11px] text-[#87929a]">
+        <div className="px-5 py-3.5 bg-white/[0.02] border-t border-white/[0.08] flex items-center justify-between">
+          <span className="font-mono text-[11px] text-slate-400">
             Every scenario instantly resolves local timezones, CGS physics units, and hourly trajectories.
           </span>
           <button
             onClick={onClose}
-            className="px-4 py-1.5 rounded-lg bg-[#1f2430] hover:bg-[#272a30] text-[#cbd5e1] hover:text-white font-sans text-[12px] font-bold transition-colors cursor-pointer"
+            className="px-4 py-1.5 rounded-xl bg-white/[0.05] hover:bg-white/[0.1] border border-white/[0.08] hover:border-white/[0.2] text-slate-300 hover:text-white font-sans text-[12px] font-medium transition-all duration-200 cursor-pointer"
           >
             Close
           </button>

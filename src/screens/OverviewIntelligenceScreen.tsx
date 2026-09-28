@@ -1,24 +1,20 @@
-import React, { useState } from 'react';
-import { NavTab, StationData, HourlyForecastRow } from '../types';
-import {
-  formatPM_CGS,
-  formatPressure_CGS,
-  formatWind_CGS,
-  formatHeight_CGS,
-  getOverallRiskContext
-} from '../utils/cgsUtils';
+import React from 'react';
+import { NavTab, StationData, HourlyForecastRow, UnitSystem } from '../types';
 import { GlobalSearchBar } from '../components/GlobalSearchBar';
-import { GlobalLocationSearchResult, PRESET_WORLD_CITIES } from '../services/airQualityApi';
+import { GlobalLocationSearchResult } from '../services/airQualityApi';
 import { useStationTime } from '../utils/timezoneUtils';
 import { CleanestWindowCard } from '../components/CleanestWindowCard';
 import { ActivitySafetyMatrix } from '../components/ActivitySafetyMatrix';
-import { DEMO_SCENARIOS } from '../components/DemoScenariosModal';
+import { DEMO_SCENARIOS, DemoScenario } from '../components/DemoScenariosModal';
 import { HOURLY_FORECAST_DATA } from '../data/mockData';
+import { calculateAQI, getAQICategory, formatTelemetryMetric } from '../utils/aqiUtils';
+import { Card } from '../components/ui/Card';
+import { MetricCard } from '../components/ui/MetricCard';
 
 interface OverviewIntelligenceScreenProps {
   station: StationData;
   onNavigateTab: (tab: NavTab) => void;
-  simpleMode?: boolean;
+  unitSystem?: UnitSystem;
   onSelectLocation?: (loc: GlobalLocationSearchResult) => void;
   isLoading?: boolean;
   hourlyForecast?: HourlyForecastRow[];
@@ -29,40 +25,47 @@ interface OverviewIntelligenceScreenProps {
 export const OverviewIntelligenceScreen: React.FC<OverviewIntelligenceScreenProps> = ({
   station,
   onNavigateTab,
-  simpleMode = true,
+  unitSystem = 'standard',
   onSelectLocation,
   isLoading = false,
   hourlyForecast,
   onOpenCompare,
   onOpenScenarios
 }) => {
-  // Live Clock synchronized with Active City Timezone
   const stationTime = useStationTime(station);
 
-  // CGS Unit Conversions & Context
-  const pm25CGS = formatPM_CGS(station.pm25, 'PM2.5');
-  const pm10CGS = formatPM_CGS(station.pm10, 'PM10');
-  const pressureCGS = formatPressure_CGS(station.pressure);
-  const windCGS = formatWind_CGS(station.windSpeedMS, station.windDirection);
-  const heightCGS = formatHeight_CGS(station.pblHeight);
-  const elevationCGS = `${(station.elevation * 100).toLocaleString()} cm`;
-
-  // Health and Risk plain-English contextual synthesis
-  const riskContext = getOverallRiskContext(station.riskScore, station.region.split('-')[0].trim());
+  // Calculate AQI & category
+  const aqi = calculateAQI(station.pm25);
+  const aqiCategory = getAQICategory(aqi);
 
   // Active Forecast Data
-  const forecastList: HourlyForecastRow[] = hourlyForecast && hourlyForecast.length > 0
-    ? hourlyForecast
-    : HOURLY_FORECAST_DATA;
+  const forecastList: HourlyForecastRow[] =
+    hourlyForecast && hourlyForecast.length > 0 ? hourlyForecast : HOURLY_FORECAST_DATA;
 
-  const peakForecast = forecastList.find((f) => f.horizon.includes('PEAK') || f.horizon.includes('24h')) || forecastList[2];
+  const peakForecast =
+    forecastList.reduce((prev, curr) => (curr.pm25 > prev.pm25 ? curr : prev), forecastList[0]);
   const reliefForecast = forecastList[forecastList.length - 1];
 
+  // Metric formatters based on UnitSystem
+  const pm25Metric = formatTelemetryMetric(station.pm25, 'pm25', unitSystem);
+  const pm10Metric = formatTelemetryMetric(station.pm10, 'pm10', unitSystem);
+  const pblMetric = formatTelemetryMetric(station.pblHeight, 'pblHeight', unitSystem);
+  const windMetric = formatTelemetryMetric(station.windSpeedMS, 'wind', unitSystem);
+  const pressureMetric = formatTelemetryMetric(station.pressure, 'pressure', unitSystem);
+  const tempMetric = formatTelemetryMetric(station.dryTemp, 'temp', unitSystem);
+
+  const cityNameClean = station.region.split('-')[0].trim();
+
+  // Circular progress calculations for AQI
+  const circumference = 2 * Math.PI * 46;
+  const progressRatio = Math.min(1, Math.max(0, aqi / 300));
+  const strokeDashoffset = circumference - progressRatio * circumference;
+
   return (
-    <div className="flex flex-col w-full max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4 sm:py-6 gap-6">
+    <div className="flex flex-col w-full max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4 sm:py-6 gap-6 relative">
       
-      {/* 1. WORLDWIDE SEARCH & ACTIVE LOCATION BAR */}
-      <section className="bg-[#151922] border border-[#272a30] rounded-2xl p-4 sm:p-5 shadow-lg flex flex-col gap-4">
+      {/* 1. Global Search & Active Location Glass Ribbon */}
+      <Card variant="elevated" className="p-4 sm:p-5 flex flex-col gap-4 animate-fade-in-up stagger-1">
         {onSelectLocation && (
           <GlobalSearchBar
             onSelectLocation={onSelectLocation}
@@ -71,114 +74,86 @@ export const OverviewIntelligenceScreen: React.FC<OverviewIntelligenceScreenProp
           />
         )}
 
-        {/* Selected City Header Banner */}
-        <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 pt-2 border-t border-[#272a30]">
+        <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 pt-3 border-t border-white/[0.08]">
           <div className="flex items-start sm:items-center gap-3">
-            <span className="text-3xl sm:text-4xl drop-shadow">{station.flag || '🌍'}</span>
+            <span className="text-3xl sm:text-4xl drop-shadow-md">{station.flag || '🌍'}</span>
             <div className="flex flex-col">
-              <div className="flex items-center gap-2 flex-wrap">
-                <h1 className="font-sans text-[22px] sm:text-[26px] font-bold text-white tracking-tight">
+              <div className="flex items-center gap-2.5 flex-wrap">
+                <h1 className="text-[22px] sm:text-[26px] font-bold text-white tracking-tight">
                   {station.region}
                 </h1>
-                <span className="font-mono text-[11px] font-bold px-2 py-0.5 rounded bg-[#38bdf8]/15 text-[#8ed5ff] border border-[#38bdf8]/30">
+                <span className="font-mono text-[11px] font-semibold px-2 py-0.5 rounded-full bg-white/[0.06] text-slate-300 border border-white/[0.08]">
                   {station.code}
                 </span>
                 {isLoading && (
-                  <span className="flex items-center gap-1 font-mono text-[11px] text-[#44e2cd] animate-pulse">
-                    <span className="w-2 h-2 rounded-full bg-[#44e2cd]"></span>
-                    FETCHING LIVE GLOBAL FEED...
+                  <span className="flex items-center gap-1.5 font-mono text-[11px] text-sky-400">
+                    <span className="w-2 h-2 rounded-full bg-sky-400 animate-pulse" />
+                    Fetching Live Feeds...
                   </span>
                 )}
               </div>
-              <div className="flex items-center gap-3 text-[12px] font-mono text-[#87929a] flex-wrap mt-0.5">
-                <span>Coordinates: {station.lat.toFixed(2)}°N, {station.lng.toFixed(2)}°E</span>
+              <div className="flex items-center gap-3 text-[12px] text-slate-400 flex-wrap mt-0.5 font-mono">
+                <span>{station.lat.toFixed(2)}°N, {station.lng.toFixed(2)}°E</span>
                 <span>•</span>
-                <span>Altitude: <strong className="text-[#cbd5e1]">{elevationCGS} ({station.elevation}m)</strong></span>
+                <span>Elevation: <strong className="text-slate-300 font-medium">{station.elevation}m ({station.elevation * 100} cm)</strong></span>
                 <span>•</span>
-                <span className="text-[#44e2cd] font-semibold">Continuous Global Sync</span>
+                <span className="text-emerald-400 font-sans font-medium">Verified Weather Stream</span>
               </div>
             </div>
           </div>
 
-          {/* Right Action Block: Dynamic Local City Time & CGS Badges */}
-          <div className="flex items-center gap-3 flex-wrap self-start md:self-center">
-            {/* Dynamic Local City Time & Timezone Card */}
-            <div className="flex items-center gap-2.5 px-3.5 py-2 rounded-xl bg-[#16202c] border border-[#38bdf8]/40 shadow-md">
-              <span className="text-2xl">{stationTime.isNight ? '🌙' : '☀️'}</span>
+          {/* Right Action Block: Dynamic Local City Time */}
+          <div className="flex items-center gap-2.5 flex-wrap self-start md:self-center">
+            <div
+              className="flex items-center gap-2.5 px-3.5 py-2 rounded-xl bg-white/[0.04] backdrop-blur-md border border-white/[0.08] text-[12px] shadow-xs"
+              title={`Local time in ${station.region} (${stationTime.timezone})`}
+            >
+              <span className="text-xl">{stationTime.isNight ? '🌙' : '☀️'}</span>
               <div className="flex flex-col">
-                <div className="flex items-center gap-2">
-                  <span className="font-mono text-[10px] uppercase font-bold text-[#8ed5ff] tracking-wider flex items-center gap-1">
-                    <span className="w-1.5 h-1.5 rounded-full bg-[#44e2cd] animate-pulse"></span>
-                    LOCAL TIME ({stationTime.timezoneAbbr || stationTime.utcOffsetStr})
-                  </span>
-                  <span className="font-mono text-[9px] px-1.5 py-0.2 rounded bg-[#38bdf8]/20 text-[#8ed5ff] font-semibold">
-                    {stationTime.dayPeriod}
-                  </span>
+                <div className="flex items-center gap-1.5 font-mono text-[10px] text-slate-400 uppercase tracking-wider">
+                  <span>Local Time</span>
+                  <span>({stationTime.timezoneAbbr || stationTime.utcOffsetStr})</span>
                 </div>
-                <div className="flex items-baseline gap-2 mt-0.5">
-                  <span className="font-mono text-[18px] sm:text-[20px] font-extrabold text-white tracking-tight">
-                    {stationTime.time12}
-                  </span>
-                  <span className="font-mono text-[11px] text-[#87929a]">
-                    ({stationTime.time24})
-                  </span>
+                <div className="text-[16px] font-bold text-white font-mono leading-tight mt-0.5">
+                  {stationTime.time12}
                 </div>
-                <span className="font-sans text-[11px] text-[#cbd5e1] flex items-center gap-1.5">
-                  <span>{stationTime.dateStr}</span>
-                  <span className="text-[#87929a]">•</span>
-                  <span className="font-mono text-[10px] text-[#38bdf8] font-bold">{stationTime.timezone}</span>
-                </span>
               </div>
             </div>
 
-            {/* CGS Standard Badge */}
-            <div className="flex items-center gap-2 px-3 py-2 rounded-xl bg-[#1a202c] border border-[#38bdf8]/30 shrink-0">
-              <span className="material-symbols-outlined text-[18px] text-[#38bdf8]">straighten</span>
-              <div className="flex flex-col">
-                <span className="font-mono text-[10px] uppercase font-bold text-[#8ed5ff] tracking-wider">
-                  CGS UNIT STANDARD
-                </span>
-                <span className="font-mono text-[11px] text-[#e2e8f0]">
-                  g/cm³ • dyn/cm² • cm/s
-                </span>
-              </div>
-            </div>
-
-            {/* Compare City Button */}
             {onOpenCompare && (
               <button
+                type="button"
                 onClick={onOpenCompare}
-                className="flex items-center gap-1.5 px-3 py-2 rounded-xl bg-[#16202c] hover:bg-[#1f2c3d] border border-[#44e2cd]/40 text-[#44e2cd] hover:text-white transition-all font-sans text-[12px] font-bold shadow-md cursor-pointer shrink-0"
+                className="flex items-center gap-1.5 px-3.5 py-2 rounded-xl bg-white/[0.04] hover:bg-white/[0.08] border border-white/[0.08] hover:border-teal-400/50 text-teal-400 hover:text-white transition-all duration-200 hover:-translate-y-0.5 hover:scale-[1.02] hover:shadow-[0_4px_14px_rgba(20,184,166,0.2)] text-[12px] font-medium cursor-pointer backdrop-blur-md shadow-xs"
                 title="Compare this city with any other city side-by-side"
               >
-                <span className="material-symbols-outlined text-[18px]">compare_arrows</span>
-                <span>Compare City</span>
+                <span className="material-symbols-outlined text-[17px]">compare_arrows</span>
+                <span>Compare</span>
               </button>
             )}
           </div>
         </div>
 
-        {/* Evaluator Quick Demo Scenarios Ribbon */}
-        <div className="pt-2 border-t border-[#272a30] flex flex-col lg:flex-row lg:items-center justify-between gap-2.5">
-          <div className="flex items-center gap-2 shrink-0">
-            <span className="material-symbols-outlined text-[18px] text-[#38bdf8]">science</span>
-            <span className="font-mono text-[11px] font-bold text-[#8ed5ff] uppercase tracking-wider">
-              EVALUATOR DEMO SCENARIOS:
-            </span>
+        {/* Demo Scenarios Ribbon */}
+        <div className="pt-2.5 border-t border-white/[0.08] flex flex-col lg:flex-row lg:items-center justify-between gap-2.5">
+          <div className="flex items-center gap-1.5 text-slate-400 text-[12px] shrink-0 font-medium">
+            <span className="material-symbols-outlined text-[16px] text-amber-400">science</span>
+            <span>Atmospheric Presets:</span>
           </div>
 
-          <div className="flex items-center gap-2 overflow-x-auto pb-1 lg:pb-0 scrollbar-thin">
-            {DEMO_SCENARIOS.map((sc) => (
+          <div className="flex items-center gap-2 overflow-x-auto pb-1 lg:pb-0 scrollbar-none">
+            {DEMO_SCENARIOS.map((sc: DemoScenario) => (
               <button
                 key={sc.id}
+                type="button"
                 onClick={() => onSelectLocation && onSelectLocation(sc.targetCity)}
                 disabled={isLoading}
-                className="px-2.5 py-1 rounded-lg bg-[#161a24] hover:bg-[#202736] border border-[#2d3442] hover:border-[#38bdf8]/50 text-white font-sans text-[11px] font-medium transition-all shrink-0 flex items-center gap-1.5 cursor-pointer shadow-xs"
+                className="px-3 py-1.2 rounded-xl bg-white/[0.04] hover:bg-white/[0.1] border border-white/[0.08] hover:border-sky-400/40 hover:shadow-[0_4px_14px_rgba(56,189,248,0.2)] hover:-translate-y-0.5 hover:scale-105 text-slate-200 text-[11px] font-medium transition-all duration-200 shrink-0 flex items-center gap-1.5 cursor-pointer backdrop-blur-md group"
                 title={sc.subtitle}
               >
-                <span>{sc.flag}</span>
-                <span className="font-bold">{sc.cityName.split('/')[0].trim()}</span>
-                <span className={`font-mono text-[9px] font-bold px-1 rounded ${sc.bgColor} ${sc.color}`}>
+                <span className="group-hover:scale-110 transition-transform">{sc.flag}</span>
+                <span className="font-semibold group-hover:text-sky-300 transition-colors">{sc.cityName.split('/')[0].trim()}</span>
+                <span className={`text-[10px] px-1.5 py-0.2 rounded-full font-mono font-medium ${sc.bgColor} ${sc.color} border border-white/[0.06]`}>
                   {sc.expectedAqi.split('·')[0].trim()}
                 </span>
               </button>
@@ -186,464 +161,394 @@ export const OverviewIntelligenceScreen: React.FC<OverviewIntelligenceScreenProp
 
             {onOpenScenarios && (
               <button
+                type="button"
                 onClick={onOpenScenarios}
-                className="px-2 py-1 text-[11px] text-[#38bdf8] hover:text-[#8ed5ff] font-sans font-bold flex items-center gap-0.5 shrink-0 cursor-pointer"
+                className="px-2.5 py-1 text-[11px] text-sky-400 hover:text-sky-300 hover:scale-105 font-semibold flex items-center gap-0.5 shrink-0 cursor-pointer transition-all"
               >
-                <span>View Details</span>
+                <span>All Scenarios</span>
                 <span className="material-symbols-outlined text-[14px]">chevron_right</span>
               </button>
             )}
           </div>
         </div>
-      </section>
+      </Card>
 
-      {/* 2. SIMPLE, UNCLUTTERED AIR QUALITY STATUS & HEALTH GUIDANCE */}
-      <section className="bg-[#151922] border border-[#272a30] rounded-2xl p-5 sm:p-6 shadow-xl">
-        <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 items-center">
+      {/* 2. Hero Air Quality & Health Guidance Card with Animated Glow Ring */}
+      <Card
+        variant="elevated"
+        className="p-5 sm:p-7 flex flex-col gap-6 relative overflow-hidden animate-fade-in-up stagger-2"
+      >
+        {/* Ambient Radial Glass Glow inside card */}
+        <div
+          className="absolute -top-24 -left-24 w-72 h-72 rounded-full blur-[90px] opacity-35 pointer-events-none transition-colors duration-1000"
+          style={{ backgroundColor: aqiCategory.color }}
+        />
+
+        <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 items-center relative z-10">
           
-          {/* Main Air Score & Health Gauge (5 Cols) */}
-          <div className="lg:col-span-5 flex flex-col gap-3.5 pr-0 lg:pr-4 lg:border-r border-[#272a30]">
+          {/* Main Air Score & Circular Gauge (5 Cols) */}
+          <div className="lg:col-span-5 flex flex-col gap-4 pr-0 lg:pr-6 lg:border-r border-white/[0.08]">
             <div className="flex items-center justify-between">
-              <span className="font-mono text-[11px] font-bold text-[#87929a] uppercase tracking-wider flex items-center gap-1.5">
-                <span className="w-2 h-2 rounded-full bg-[#44e2cd]"></span>
-                CURRENT AIR QUALITY STATUS
+              <span className="text-[12px] font-semibold text-slate-400 uppercase tracking-wider flex items-center gap-2">
+                <span
+                  className="w-2.5 h-2.5 rounded-full animate-pulse"
+                  style={{ backgroundColor: aqiCategory.color }}
+                />
+                Live Air Quality Status
               </span>
-              <span className={`px-2.5 py-0.5 rounded-full font-mono text-[11px] font-bold border ${riskContext.badge.bg} ${riskContext.badge.color} ${riskContext.badge.border}`}>
-                {riskContext.badge.text}
+              <span
+                className={`px-3 py-0.5 rounded-full text-[11px] font-semibold border backdrop-blur-md ${aqiCategory.bgColor} ${aqiCategory.textColor} ${aqiCategory.borderColor}`}
+              >
+                {aqiCategory.label}
               </span>
             </div>
 
-            <div className="flex items-baseline gap-3">
-              <span className="font-sans text-[52px] sm:text-[60px] font-black text-white leading-none tracking-tight">
-                {station.riskScore}
-              </span>
+            {/* Circular Gauge + Big Score */}
+            <div className="flex items-center gap-5">
+              <div className="relative w-28 h-28 shrink-0 flex items-center justify-center">
+                <svg className="w-full h-full -rotate-90" viewBox="0 0 110 110">
+                  {/* Background Track */}
+                  <circle
+                    cx="55"
+                    cy="55"
+                    r="46"
+                    className="stroke-white/[0.08]"
+                    strokeWidth="8"
+                    fill="transparent"
+                  />
+                  {/* Animated Progress Arc */}
+                  <circle
+                    cx="55"
+                    cy="55"
+                    r="46"
+                    stroke={aqiCategory.color}
+                    strokeWidth="8"
+                    strokeLinecap="round"
+                    strokeDasharray={circumference}
+                    strokeDashoffset={strokeDashoffset}
+                    fill="transparent"
+                    className="transition-all duration-1000 ease-out"
+                  />
+                </svg>
+                {/* Center Badge Icon */}
+                <div className="absolute inset-0 flex flex-col items-center justify-center">
+                  <span className="material-symbols-outlined text-[24px]" style={{ color: aqiCategory.color }}>
+                    air
+                  </span>
+                </div>
+              </div>
+
               <div className="flex flex-col">
-                <span className="font-sans text-[18px] text-[#87929a] font-medium">/ 100</span>
-                <span className="font-sans text-[12px] text-[#8ed5ff] font-semibold">Physical Risk Index</span>
+                <div className="flex items-baseline gap-2">
+                  <span className="text-[52px] sm:text-[60px] font-black text-white leading-none tracking-tight">
+                    {aqi}
+                  </span>
+                  <span className="text-[14px] text-slate-400 font-medium">/ 500 AQI</span>
+                </div>
+                <span className="text-[12px] text-sky-400 font-mono mt-1">
+                  {station.pm25.toFixed(1)} µg/m³ PM2.5 Mass
+                </span>
+                <span className="text-[11px] text-slate-400">
+                  EPA Standard Index
+                </span>
               </div>
             </div>
 
-            {/* Visual Risk Bar */}
+            {/* Spectrum Bar with Animated Needle */}
             <div className="flex flex-col gap-1.5">
-              <div className="relative w-full h-3 bg-[#0d1017] rounded-full overflow-hidden flex border border-[#272a30]">
-                <div className="w-1/4 bg-[#44e2cd]/60 h-full" title="0-25 Low Risk" />
-                <div className="w-1/4 bg-[#38bdf8]/60 h-full" title="25-50 Moderate" />
-                <div className="w-1/4 bg-[#fbbf24]/60 h-full" title="50-75 High" />
-                <div className="w-1/4 bg-[#ffb4ab]/80 h-full" title="75-100 Critical" />
-                
+              <div className="relative w-full h-2.5 bg-white/[0.06] rounded-full overflow-hidden flex border border-white/[0.08]">
+                <div className="w-1/6 bg-emerald-500/80 h-full" title="0-50 Good" />
+                <div className="w-1/6 bg-amber-500/80 h-full" title="51-100 Moderate" />
+                <div className="w-1/6 bg-orange-500/80 h-full" title="101-150 Sensitive" />
+                <div className="w-1/6 bg-rose-500/80 h-full" title="151-200 Unhealthy" />
+                <div className="w-1/6 bg-purple-500/80 h-full" title="201-300 Very Unhealthy" />
+                <div className="w-1/6 bg-rose-950 h-full" title="301-500 Hazardous" />
+
                 {/* Pointer indicator */}
                 <div
-                  className="absolute top-0 bottom-0 w-2 bg-white rounded-full shadow-lg transform -translate-x-1/2 transition-all duration-500"
-                  style={{ left: `${Math.min(98, Math.max(2, station.riskScore))}%` }}
+                  className="absolute top-0 bottom-0 w-2.5 bg-white rounded-full shadow-[0_0_8px_rgba(255,255,255,0.8)] transform -translate-x-1/2 transition-all duration-700"
+                  style={{ left: `${Math.min(98, Math.max(2, (aqi / 300) * 100))}%` }}
                 />
               </div>
-              <div className="flex justify-between font-mono text-[10px] text-[#87929a]">
-                <span>0 Clean</span>
-                <span>25 Moderate</span>
-                <span>50 Elevated</span>
-                <span>75 High</span>
-                <span>100 Critical</span>
+              <div className="flex justify-between text-[10px] font-mono text-slate-500">
+                <span>0 Good</span>
+                <span>50</span>
+                <span>100</span>
+                <span>150</span>
+                <span>200</span>
+                <span>300+</span>
               </div>
             </div>
 
-            <div className="bg-[#1a202c] p-3 rounded-xl border border-[#2d3748] flex flex-col gap-1">
-              <span className="font-sans text-[13px] font-bold text-white">
-                {riskContext.headline}
+            <div className="bg-white/[0.03] backdrop-blur-md p-3.5 rounded-xl border border-white/[0.08] flex flex-col gap-1">
+              <span className="text-[13px] font-semibold text-white">
+                {aqiCategory.advice}
               </span>
-              <p className="font-sans text-[12px] text-[#cbd5e1] leading-relaxed">
-                {riskContext.description}
+              <p className="text-[12px] text-slate-400 leading-relaxed">
+                {aqiCategory.healthImplications}
               </p>
             </div>
           </div>
 
-          {/* Plain-English Practical Health Guidance (7 Cols) */}
-          <div className="lg:col-span-7 flex flex-col gap-3">
-            <span className="font-mono text-[11px] font-bold text-[#87929a] uppercase tracking-wider flex items-center gap-1.5">
-              <span className="material-symbols-outlined text-[16px] text-[#38bdf8]">health_and_safety</span>
-              PRACTICAL HEALTH RECOMMENDATIONS TODAY
-            </span>
-
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
-              {riskContext.actionItems.map((item, idx) => (
-                <div
-                  key={idx}
-                  className="p-3 rounded-xl bg-[#191e28] border border-[#272a30] flex items-start gap-3 hover:border-[#38bdf8]/40 transition-colors"
-                >
-                  <div className={`w-8 h-8 rounded-lg flex items-center justify-center shrink-0 ${
-                    item.allowed ? 'bg-[#44e2cd]/15 text-[#44e2cd]' : 'bg-[#ffb4ab]/15 text-[#ffb4ab]'
-                  }`}>
-                    <span className="material-symbols-outlined text-[20px]">{item.icon}</span>
-                  </div>
-                  <div className="flex flex-col">
-                    <span className="font-sans text-[13px] font-bold text-white">
-                      {item.title}
-                    </span>
-                    <span className="font-sans text-[11px] text-[#cbd5e1] mt-0.5 leading-snug">
-                      {item.desc}
-                    </span>
-                  </div>
-                </div>
-              ))}
+          {/* Meteorological Reason & Plain-English Context (7 Cols) */}
+          <div className="lg:col-span-7 flex flex-col gap-4">
+            <div className="flex items-center gap-2">
+              <span className="material-symbols-outlined text-[20px] text-sky-400">cloud</span>
+              <span className="text-[13px] font-semibold text-white">
+                Atmospheric Dynamics Behind Today's Air in {cityNameClean}
+              </span>
             </div>
 
-            {/* Plain English Weather Context */}
-            <div className="p-3 bg-[#131b26] rounded-xl border border-[#38bdf8]/30 flex items-center gap-3">
-              <span className="material-symbols-outlined text-[#38bdf8] text-[22px] shrink-0">wb_cloudy</span>
-              <div className="flex flex-col text-[12px]">
+            <div className="p-4 bg-white/[0.03] backdrop-blur-md rounded-xl border border-white/[0.08] flex items-start gap-3.5">
+              <span className="material-symbols-outlined text-sky-400 text-[24px] shrink-0 mt-0.5">
+                vertical_align_bottom
+              </span>
+              <div className="flex flex-col gap-1 text-[13px]">
                 <span className="text-white font-semibold">
-                  Why is the air like this in {station.region.split('-')[0].trim()}?
+                  Thermal Boundary Layer Ceiling at {pblMetric.primary}
                 </span>
-                <span className="text-[#cbd5e1]">
-                  A <strong>thermal inversion ceiling at {heightCGS.cgsFormatted}</strong> acts like a pot lid over the city, while slow wind speeds (<strong>{windCGS.cgsFormatted}</strong>) prevent smoke from dispersing.
+                <p className="text-slate-300 leading-relaxed">
+                  The boundary layer ceiling acts like a lid over the basin. With ground surface winds at{' '}
+                  <strong className="text-sky-300">{windMetric.primary} ({station.windDirection})</strong>,{' '}
+                  {station.windSpeedMS < 2
+                    ? 'particulates are stagnant and pooling close to street level.'
+                    : 'air currents are actively assisting in horizontal dispersion.'}
+                </p>
+              </div>
+            </div>
+
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+              <div className="p-3.5 rounded-xl bg-white/[0.03] backdrop-blur-md border border-white/[0.08] flex items-start gap-3">
+                <span className="material-symbols-outlined text-teal-400 text-[20px] shrink-0 mt-0.5">
+                  water_drop
                 </span>
+                <div className="flex flex-col">
+                  <span className="text-[12px] font-semibold text-white">
+                    Moisture Swelling ({station.humidity}% RH)
+                  </span>
+                  <p className="text-[11px] text-slate-400 mt-0.5 leading-snug">
+                    {station.humidity > 65
+                      ? 'High humidity causes dry soot particles to hygroscopically swell, worsening visible smog.'
+                      : 'Moderate humidity keeps fine particles dry with crisp atmospheric clarity.'}
+                  </p>
+                </div>
+              </div>
+
+              <div className="p-3.5 rounded-xl bg-white/[0.03] backdrop-blur-md border border-white/[0.08] flex items-start gap-3">
+                <span className="material-symbols-outlined text-amber-400 text-[20px] shrink-0 mt-0.5">
+                  compress
+                </span>
+                <div className="flex flex-col">
+                  <span className="text-[12px] font-semibold text-white">
+                    Barometric Pressure ({pressureMetric.primary})
+                  </span>
+                  <p className="text-[11px] text-slate-400 mt-0.5 leading-snug">
+                    {pressureMetric.context}
+                  </p>
+                </div>
               </div>
             </div>
           </div>
+
         </div>
-      </section>
+      </Card>
 
-      {/* 2B. CLEANEST WINDOW OF THE DAY (BEST OUTDOOR HOUR) */}
-      <CleanestWindowCard
-        station={station}
-        hourlyForecast={forecastList}
-        onNavigateForecast={() => onNavigateTab('forecast-engine')}
-      />
+      {/* 3. Cleanest Outdoor Window of the Day */}
+      <div className="animate-fade-in-up stagger-3">
+        <CleanestWindowCard
+          station={station}
+          hourlyForecast={forecastList}
+          onNavigateForecast={() => onNavigateTab('forecast-engine')}
+        />
+      </div>
 
-      {/* 2C. DETAILED ACTIVITY SAFETY MATRIX */}
-      <ActivitySafetyMatrix station={station} />
+      {/* 4. Activity & Health Safety Guidance */}
+      <div className="animate-fade-in-up stagger-4">
+        <ActivitySafetyMatrix station={station} />
+      </div>
 
-      {/* 3. ESSENTIAL MEASUREMENTS IN CGS UNITS WITH DIRECT CONTEXT */}
-      <section className="flex flex-col gap-3">
+      {/* 5. Key Atmospheric Telemetry (6 Glass Metric Cards) */}
+      <section className="flex flex-col gap-3 animate-fade-in-up stagger-5">
         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-1">
           <div>
-            <h2 className="font-sans text-[18px] sm:text-[20px] font-bold text-white tracking-tight flex items-center gap-2">
-              <span className="material-symbols-outlined text-[#38bdf8] text-[22px]">bar_chart</span>
-              Key Environmental Measurements (CGS Units)
+            <h2 className="text-[18px] font-bold text-white tracking-tight flex items-center gap-2">
+              <span className="material-symbols-outlined text-sky-400 text-[20px]">speed</span>
+              Key Environmental Telemetry
             </h2>
-            <p className="font-sans text-[12px] text-[#87929a]">
-              All particulate mass densities, pressures, and velocities measured in physical CGS standard with real-world health contexts.
+            <p className="text-[12px] text-slate-400">
+              Live physical measurements with dual {unitSystem === 'standard' ? 'Standard (AQI / SI)' : 'Scientific (CGS)'} unit support
             </p>
           </div>
-          <span className="font-mono text-[11px] text-[#44e2cd] bg-[#44e2cd]/10 px-2.5 py-1 rounded-md border border-[#44e2cd]/30 self-start sm:self-center font-bold">
-            STANDARD CGS UNITS: g/cm³ • dyn/cm² • cm/s
+          <span className="text-[11px] text-slate-400 font-mono self-start sm:self-center">
+            Mode: <strong className="text-sky-400 uppercase">{unitSystem}</strong>
           </span>
         </div>
 
-        {/* 6 Clean Metric Cards */}
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3.5">
-          
-          {/* Card 1: PM2.5 */}
-          <div className="bg-[#151922] border border-[#272a30] hover:border-[#38bdf8]/50 rounded-xl p-4 flex flex-col justify-between gap-3 shadow transition-all">
-            <div className="flex flex-col gap-1.5">
-              <div className="flex items-center justify-between">
-                <span className="font-mono text-[11px] font-bold text-[#8ed5ff] uppercase flex items-center gap-1.5">
-                  <span className="material-symbols-outlined text-[16px]">blur_on</span>
-                  PM2.5 Mass Density
-                </span>
-                <span className={`px-2 py-0.5 rounded text-[10px] font-mono font-bold border ${pm25CGS.statusBadge.bg} ${pm25CGS.statusBadge.color} ${pm25CGS.statusBadge.border}`}>
-                  {pm25CGS.statusBadge.label}
-                </span>
-              </div>
-              
-              {/* Primary CGS Value */}
-              <div className="flex flex-col mt-1">
-                <span className="font-mono text-[22px] sm:text-[24px] font-bold text-white tracking-tight">
-                  {pm25CGS.scientificNotation}
-                </span>
-                <span className="font-mono text-[11px] text-[#87929a]">
-                  SI Equivalent: <strong className="text-[#e2e8f0]">{pm25CGS.siEquiv}</strong>
-                </span>
-              </div>
-            </div>
+          <MetricCard
+            label={pm25Metric.label}
+            icon="blur_on"
+            primaryValue={pm25Metric.primary}
+            secondaryValue={pm25Metric.secondary}
+            contextText={pm25Metric.context}
+            badgeText={station.pm25 < 35 ? 'Acceptable' : 'Elevated'}
+            badgeVariant={station.pm25 < 35 ? 'good' : 'unhealthy'}
+            className="hover:border-sky-400/40"
+          />
 
-            {/* Context Box */}
-            <div className="bg-[#1a202c] p-2.5 rounded-lg border border-[#2d3748] flex flex-col gap-1">
-              <span className="font-sans text-[11px] font-bold text-[#8ed5ff] uppercase">
-                What this means:
-              </span>
-              <p className="font-sans text-[11px] text-[#cbd5e1] leading-relaxed">
-                {pm25CGS.context}
-              </p>
-            </div>
-          </div>
+          <MetricCard
+            label={pm10Metric.label}
+            icon="grain"
+            primaryValue={pm10Metric.primary}
+            secondaryValue={pm10Metric.secondary}
+            contextText={pm10Metric.context}
+            badgeText="Coarse Dust"
+            badgeVariant="neutral"
+            className="hover:border-teal-400/40"
+          />
 
-          {/* Card 2: PM10 */}
-          <div className="bg-[#151922] border border-[#272a30] hover:border-[#38bdf8]/50 rounded-xl p-4 flex flex-col justify-between gap-3 shadow transition-all">
-            <div className="flex flex-col gap-1.5">
-              <div className="flex items-center justify-between">
-                <span className="font-mono text-[11px] font-bold text-[#8ed5ff] uppercase flex items-center gap-1.5">
-                  <span className="material-symbols-outlined text-[16px]">grain</span>
-                  PM10 Coarse Particulate
-                </span>
-                <span className="px-2 py-0.5 rounded text-[10px] font-mono font-bold bg-[#1f2633] text-[#cbd5e1] border border-[#2d3748]">
-                  COARSE DUST
-                </span>
-              </div>
-              
-              {/* Primary CGS Value */}
-              <div className="flex flex-col mt-1">
-                <span className="font-mono text-[22px] sm:text-[24px] font-bold text-white tracking-tight">
-                  {pm10CGS.scientificNotation}
-                </span>
-                <span className="font-mono text-[11px] text-[#87929a]">
-                  SI Equivalent: <strong className="text-[#e2e8f0]">{pm10CGS.siEquiv}</strong>
-                </span>
-              </div>
-            </div>
+          <MetricCard
+            label={pblMetric.label}
+            icon="vertical_align_bottom"
+            primaryValue={pblMetric.primary}
+            secondaryValue={pblMetric.secondary}
+            contextText={pblMetric.context}
+            badgeText={station.pblHeight < 800 ? 'Inversion Cap' : 'Open Mixing'}
+            badgeVariant={station.pblHeight < 800 ? 'sensitive' : 'good'}
+            className="hover:border-amber-400/40"
+          />
 
-            {/* Context Box */}
-            <div className="bg-[#1a202c] p-2.5 rounded-lg border border-[#2d3748] flex flex-col gap-1">
-              <span className="font-sans text-[11px] font-bold text-[#8ed5ff] uppercase">
-                What this means:
-              </span>
-              <p className="font-sans text-[11px] text-[#cbd5e1] leading-relaxed">
-                Coarse dust from roads, construction, and soil. Causes eye burning, coughing, and throat dryness.
-              </p>
-            </div>
-          </div>
+          <MetricCard
+            label={windMetric.label}
+            icon="air"
+            primaryValue={windMetric.primary}
+            secondaryValue={`Blowing ${station.windDirection} • ${windMetric.secondary}`}
+            contextText={windMetric.context}
+            badgeText={station.windSpeedMS < 2 ? 'Stagnant' : 'Brisk'}
+            badgeVariant={station.windSpeedMS < 2 ? 'sensitive' : 'good'}
+            className="hover:border-sky-400/40"
+          />
 
-          {/* Card 3: Atmospheric Pressure */}
-          <div className="bg-[#151922] border border-[#272a30] hover:border-[#38bdf8]/50 rounded-xl p-4 flex flex-col justify-between gap-3 shadow transition-all">
-            <div className="flex flex-col gap-1.5">
-              <div className="flex items-center justify-between">
-                <span className="font-mono text-[11px] font-bold text-[#8ed5ff] uppercase flex items-center gap-1.5">
-                  <span className="material-symbols-outlined text-[16px]">compress</span>
-                  Atmospheric Pressure
-                </span>
-                <span className={`px-2 py-0.5 rounded text-[10px] font-mono font-bold border ${pressureCGS.statusBadge.bg} ${pressureCGS.statusBadge.color} ${pressureCGS.statusBadge.border}`}>
-                  {pressureCGS.statusBadge.label}
-                </span>
-              </div>
-              
-              {/* Primary CGS Value */}
-              <div className="flex flex-col mt-1">
-                <span className="font-mono text-[22px] sm:text-[24px] font-bold text-white tracking-tight">
-                  {pressureCGS.cgsFormatted}
-                </span>
-                <span className="font-mono text-[11px] text-[#87929a]">
-                  CGS Barye: <strong className="text-[#e2e8f0]">{pressureCGS.cgsValue.toLocaleString()} Ba</strong> ({pressureCGS.siEquiv})
-                </span>
-              </div>
-            </div>
+          <MetricCard
+            label={pressureMetric.label}
+            icon="compress"
+            primaryValue={pressureMetric.primary}
+            secondaryValue={pressureMetric.secondary}
+            contextText={pressureMetric.context}
+            badgeText="Surface Level"
+            badgeVariant="neutral"
+            className="hover:border-slate-500"
+          />
 
-            {/* Context Box */}
-            <div className="bg-[#1a202c] p-2.5 rounded-lg border border-[#2d3748] flex flex-col gap-1">
-              <span className="font-sans text-[11px] font-bold text-[#8ed5ff] uppercase">
-                What this means:
-              </span>
-              <p className="font-sans text-[11px] text-[#cbd5e1] leading-relaxed">
-                {pressureCGS.context} Standard sea level is ~1.013 × 10⁶ dyn/cm².
-              </p>
-            </div>
-          </div>
-
-          {/* Card 4: Surface Wind Speed */}
-          <div className="bg-[#151922] border border-[#272a30] hover:border-[#38bdf8]/50 rounded-xl p-4 flex flex-col justify-between gap-3 shadow transition-all">
-            <div className="flex flex-col gap-1.5">
-              <div className="flex items-center justify-between">
-                <span className="font-mono text-[11px] font-bold text-[#8ed5ff] uppercase flex items-center gap-1.5">
-                  <span className="material-symbols-outlined text-[16px]">air</span>
-                  Wind Velocity & Direction
-                </span>
-                <span className={`px-2 py-0.5 rounded text-[10px] font-mono font-bold border ${windCGS.statusBadge.bg} ${windCGS.statusBadge.color} ${windCGS.statusBadge.border}`}>
-                  {windCGS.statusBadge.label}
-                </span>
-              </div>
-              
-              {/* Primary CGS Value */}
-              <div className="flex flex-col mt-1">
-                <span className="font-mono text-[22px] sm:text-[24px] font-bold text-white tracking-tight">
-                  {windCGS.cgsFormatted}
-                </span>
-                <span className="font-mono text-[11px] text-[#87929a]">
-                  Blowing <strong className="text-[#44e2cd]">{station.windDirection}</strong> • {windCGS.siEquiv}
-                </span>
-              </div>
-            </div>
-
-            {/* Context Box */}
-            <div className="bg-[#1a202c] p-2.5 rounded-lg border border-[#2d3748] flex flex-col gap-1">
-              <span className="font-sans text-[11px] font-bold text-[#8ed5ff] uppercase">
-                What this means:
-              </span>
-              <p className="font-sans text-[11px] text-[#cbd5e1] leading-relaxed">
-                {windCGS.context} Speeds under 150 cm/s cause pollutants to pool directly over roadways.
-              </p>
-            </div>
-          </div>
-
-          {/* Card 5: Inversion Ceiling (PBL Height) */}
-          <div className="bg-[#151922] border border-[#272a30] hover:border-[#38bdf8]/50 rounded-xl p-4 flex flex-col justify-between gap-3 shadow transition-all">
-            <div className="flex flex-col gap-1.5">
-              <div className="flex items-center justify-between">
-                <span className="font-mono text-[11px] font-bold text-[#8ed5ff] uppercase flex items-center gap-1.5">
-                  <span className="material-symbols-outlined text-[16px]">vertical_align_bottom</span>
-                  Inversion Ceiling (PBL)
-                </span>
-                <span className={`px-2 py-0.5 rounded text-[10px] font-mono font-bold border ${heightCGS.statusBadge.bg} ${heightCGS.statusBadge.color} ${heightCGS.statusBadge.border}`}>
-                  {heightCGS.statusBadge.label}
-                </span>
-              </div>
-              
-              {/* Primary CGS Value */}
-              <div className="flex flex-col mt-1">
-                <span className="font-mono text-[22px] sm:text-[24px] font-bold text-white tracking-tight">
-                  {heightCGS.cgsFormatted}
-                </span>
-                <span className="font-mono text-[11px] text-[#87929a]">
-                  Ceiling Altitude: <strong className="text-[#e2e8f0]">{heightCGS.siEquiv}</strong>
-                </span>
-              </div>
-            </div>
-
-            {/* Context Box */}
-            <div className="bg-[#1a202c] p-2.5 rounded-lg border border-[#2d3748] flex flex-col gap-1">
-              <span className="font-sans text-[11px] font-bold text-[#8ed5ff] uppercase">
-                What this means:
-              </span>
-              <p className="font-sans text-[11px] text-[#cbd5e1] leading-relaxed">
-                {heightCGS.context}
-              </p>
-            </div>
-          </div>
-
-          {/* Card 6: Temperature & Humidity */}
-          <div className="bg-[#151922] border border-[#272a30] hover:border-[#38bdf8]/50 rounded-xl p-4 flex flex-col justify-between gap-3 shadow transition-all">
-            <div className="flex flex-col gap-1.5">
-              <div className="flex items-center justify-between">
-                <span className="font-mono text-[11px] font-bold text-[#8ed5ff] uppercase flex items-center gap-1.5">
-                  <span className="material-symbols-outlined text-[16px]">thermostat</span>
-                  Temperature & Moisture
-                </span>
-                <span className="px-2 py-0.5 rounded text-[10px] font-mono font-bold bg-[#1f2633] text-[#44e2cd] border border-[#2d3748]">
-                  {station.humidity}% RH
-                </span>
-              </div>
-              
-              {/* Primary CGS Value */}
-              <div className="flex flex-col mt-1">
-                <span className="font-mono text-[22px] sm:text-[24px] font-bold text-white tracking-tight">
-                  {station.dryTemp} °C <span className="text-[14px] text-[#87929a]">({(station.dryTemp + 273.15).toFixed(1)} K)</span>
-                </span>
-                <span className="font-mono text-[11px] text-[#87929a]">
-                  Dew Point: <strong className="text-[#e2e8f0]">{station.wetTemp} °C</strong> • AOD: {station.opticalDepthAOD}
-                </span>
-              </div>
-            </div>
-
-            {/* Context Box */}
-            <div className="bg-[#1a202c] p-2.5 rounded-lg border border-[#2d3748] flex flex-col gap-1">
-              <span className="font-sans text-[11px] font-bold text-[#8ed5ff] uppercase">
-                What this means:
-              </span>
-              <p className="font-sans text-[11px] text-[#cbd5e1] leading-relaxed">
-                When humidity is above 65%, microscopic dry soot particles absorb water and swell in size, creating dense gray haze and reducing visibility.
-              </p>
-            </div>
-          </div>
-
+          <MetricCard
+            label={tempMetric.label}
+            icon="thermostat"
+            primaryValue={tempMetric.primary}
+            secondaryValue={`${station.humidity}% RH • Dew Point: ${station.wetTemp}°C`}
+            contextText="Surface thermodynamics driving boundary layer expansion."
+            badgeText={`${station.humidity}% Moisture`}
+            badgeVariant="accent"
+            className="hover:border-sky-400/40"
+          />
         </div>
       </section>
 
-      {/* 4. SIMPLE 48-HOUR FORECAST & CLEAR MILESTONES */}
-      <section className="bg-[#151922] border border-[#272a30] rounded-2xl p-5 sm:p-6 shadow-xl flex flex-col gap-5">
+      {/* 6. 48-Hour Forecast Teaser & Timeline with Shimmer SVG */}
+      <Card variant="elevated" className="p-5 sm:p-6 flex flex-col gap-4">
         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
           <div>
             <div className="flex items-center gap-2">
-              <span className="material-symbols-outlined text-[#38bdf8] text-[22px]">timeline</span>
-              <h2 className="font-sans text-[18px] sm:text-[20px] font-bold text-white tracking-tight">
-                48-Hour Plain-English Forecast
+              <span className="material-symbols-outlined text-sky-400 text-[20px]">timeline</span>
+              <h2 className="text-[18px] font-bold text-white tracking-tight">
+                48-Hour Forecast Trajectory
               </h2>
             </div>
-            <p className="font-sans text-[12px] text-[#87929a] mt-0.5">
-              Predicted smog trajectories, thermal inversion changes, and when the air will clear up.
+            <p className="text-[12px] text-slate-400 mt-0.5">
+              Projected particulate levels, boundary layer compression, and clearing front timeline
             </p>
           </div>
 
           <button
+            type="button"
             onClick={() => onNavigateTab('forecast-engine')}
-            className="px-3.5 py-1.5 bg-[#38bdf8] hover:bg-[#8ed5ff] text-[#00354a] font-sans text-[12px] font-bold rounded-lg transition-colors shadow flex items-center gap-1.5 self-start sm:self-center cursor-pointer"
+            className="px-3.5 py-1.5 bg-gradient-to-r from-sky-400 to-sky-500 hover:from-sky-300 hover:to-sky-400 text-slate-950 font-bold text-[12px] rounded-xl transition-all duration-200 flex items-center gap-1.5 self-start sm:self-center cursor-pointer shadow-[0_2px_12px_rgba(56,189,248,0.35)] hover:shadow-[0_4px_20px_rgba(56,189,248,0.5)] hover:-translate-y-0.5"
           >
-            <span>Detailed 48h Engine</span>
+            <span>Detailed Forecast Engine</span>
             <span className="material-symbols-outlined text-[16px]">arrow_forward</span>
           </button>
         </div>
 
         {/* 3 Step Milestone Cards */}
         <div className="grid grid-cols-1 md:grid-cols-3 gap-3.5">
-          {/* Step 1: Right Now */}
-          <div className="p-4 rounded-xl bg-[#191e28] border border-[#272a30] flex flex-col gap-2">
+          <div className="p-4 rounded-xl bg-white/[0.03] backdrop-blur-md border border-white/[0.08] flex flex-col gap-2 hover:border-white/[0.18] transition-all">
             <div className="flex items-center justify-between">
-              <span className="font-mono text-[10px] uppercase font-bold text-[#44e2cd] tracking-wider px-2 py-0.5 rounded bg-[#44e2cd]/15">
-                MILESTONE 1 • NOW
+              <span className="text-[10px] uppercase font-bold text-sky-400 px-2 py-0.5 rounded-full bg-sky-500/10 font-mono">
+                Now • T+0h
               </span>
-              <span className="font-mono text-[11px] text-[#87929a]">T+0 hrs</span>
+              <span className="text-[11px] font-mono text-slate-400">{station.pm25.toFixed(1)} µg/m³</span>
             </div>
-            <span className="font-sans text-[15px] font-bold text-white">
-              Current Baseline: {pm25CGS.scientificNotation}
+            <span className="text-[14px] font-semibold text-white">
+              Current Baseline: AQI {aqi} ({aqiCategory.label})
             </span>
-            <p className="font-sans text-[12px] text-[#cbd5e1] leading-relaxed">
-              Air is currently {station.riskLabel.toLowerCase()}. Thermal inversion lid is holding at {heightCGS.cgsFormatted}.
+            <p className="text-[12px] text-slate-300 leading-relaxed">
+              Thermal ceiling holding at {station.pblHeight}m with surface winds at {station.windSpeedMS} m/s.
             </p>
           </div>
 
-          {/* Step 2: Peak Smog Event */}
-          <div className="p-4 rounded-xl bg-[#191e28] border border-[#ffb4ab]/40 bg-[#93000a]/10 flex flex-col gap-2">
+          <div className="p-4 rounded-xl bg-rose-950/20 backdrop-blur-md border border-rose-500/30 flex flex-col gap-2 hover:border-rose-500/50 transition-all">
             <div className="flex items-center justify-between">
-              <span className="font-mono text-[10px] uppercase font-bold text-[#ffb4ab] tracking-wider px-2 py-0.5 rounded bg-[#ffb4ab]/20">
-                MILESTONE 2 • PEAK SMOG SPIKE
+              <span className="text-[10px] uppercase font-bold text-rose-400 px-2 py-0.5 rounded-full bg-rose-500/15 font-mono">
+                Peak Smog Spike • {peakForecast.localTimeFormatted || peakForecast.horizon}
               </span>
-              <span className="font-mono text-[11px] text-[#ffb4ab]">T+24 hrs</span>
+              <span className="text-[11px] font-mono text-rose-300">{peakForecast.pm25} µg/m³</span>
             </div>
-            <span className="font-sans text-[15px] font-bold text-white">
-              Tomorrow Afternoon: {formatPM_CGS(peakForecast?.pm25 || 96.1).scientificNotation}
+            <span className="text-[14px] font-semibold text-rose-200">
+              Projected Maximum Accumulation
             </span>
-            <p className="font-sans text-[12px] text-[#ffdad6] leading-relaxed">
-              ⚠️ Inversion ceiling compresses down to 31,000 cm while surface winds fall to near zero (30 cm/s). Smog will peak.
+            <p className="text-[12px] text-slate-300 leading-relaxed">
+              Inversion ceiling compresses down to {peakForecast.pblHeight}m while surface winds slow down, causing smog buildup.
             </p>
           </div>
 
-          {/* Step 3: Fresh Air Relief */}
-          <div className="p-4 rounded-xl bg-[#191e28] border border-[#44e2cd]/40 bg-[#44e2cd]/10 flex flex-col gap-2">
+          <div className="p-4 rounded-xl bg-emerald-950/20 backdrop-blur-md border border-emerald-500/30 flex flex-col gap-2 hover:border-emerald-500/50 transition-all">
             <div className="flex items-center justify-between">
-              <span className="font-mono text-[10px] uppercase font-bold text-[#44e2cd] tracking-wider px-2 py-0.5 rounded bg-[#44e2cd]/20">
-                MILESTONE 3 • FRESH AIR RELIEF
+              <span className="text-[10px] uppercase font-bold text-emerald-400 px-2 py-0.5 rounded-full bg-emerald-500/15 font-mono">
+                Clearing Front • {reliefForecast.localTimeFormatted || reliefForecast.horizon}
               </span>
-              <span className="font-mono text-[11px] text-[#44e2cd]">T+48 hrs</span>
+              <span className="text-[11px] font-mono text-emerald-300">{reliefForecast.pm25} µg/m³</span>
             </div>
-            <span className="font-sans text-[15px] font-bold text-white">
-              In 48 Hours: {formatPM_CGS(reliefForecast?.pm25 || 58.3).scientificNotation}
+            <span className="text-[14px] font-semibold text-emerald-200">
+              Fresh Air Dispersal
             </span>
-            <p className="font-sans text-[12px] text-[#cbd5e1] leading-relaxed">
-              🌬️ A fast atmospheric clearing front arrives with brisk winds (540 cm/s), lifting the ceiling to 134,000 cm and clearing the air.
+            <p className="text-[12px] text-slate-300 leading-relaxed">
+              Atmospheric mixing expands to {reliefForecast.pblHeight}m with brisk dispersion winds clearing the air.
             </p>
           </div>
         </div>
 
-        {/* Clean Simplified Forecast Line SVG */}
-        <div className="bg-[#0e1218] p-4 rounded-xl border border-[#272a30] flex flex-col gap-2">
-          <div className="flex justify-between items-center text-[11px] font-mono text-[#87929a]">
-            <span>PREDICTED PM2.5 MASS DENSITY (CGS: g/cm³) OVER 48 HOURS</span>
-            <span className="text-[#38bdf8]">Clean Wind Clears Air at T+48h</span>
+        {/* Clean Forecast Line Chart with Gradient and Pulsing Nodes */}
+        <div className="bg-[#070a12]/80 backdrop-blur-md p-4 rounded-xl border border-white/[0.08] flex flex-col gap-2">
+          <div className="flex justify-between items-center text-[11px] font-mono text-slate-400">
+            <span>48-HOUR PM2.5 CONCENTRATION TREND (µg/m³)</span>
+            <span className="text-sky-400 font-semibold">Clearing front at T+48h</span>
           </div>
 
-          <div className="w-full h-28 relative">
+          <div className="w-full h-24 relative">
             <svg className="w-full h-full" viewBox="0 0 500 100" fill="none" preserveAspectRatio="none">
-              {/* Guide lines */}
-              <line x1="0" y1="20" x2="500" y2="20" stroke="#272a30" strokeDasharray="3 3" />
-              <line x1="0" y1="60" x2="500" y2="60" stroke="#272a30" strokeDasharray="3 3" />
-              
-              {/* Gradient fill */}
+              <line x1="0" y1="20" x2="500" y2="20" stroke="rgba(255,255,255,0.06)" strokeDasharray="3 3" />
+              <line x1="0" y1="60" x2="500" y2="60" stroke="rgba(255,255,255,0.06)" strokeDasharray="3 3" />
+
               <defs>
-                <linearGradient id="forecastGrad" x1="0%" y1="0%" x2="0%" y2="100%">
-                  <stop offset="0%" stopColor="#38bdf8" stopOpacity="0.25" />
+                <linearGradient id="forecastGradGlass" x1="0%" y1="0%" x2="0%" y2="100%">
+                  <stop offset="0%" stopColor="#38bdf8" stopOpacity="0.35" />
+                  <stop offset="50%" stopColor="#38bdf8" stopOpacity="0.1" />
                   <stop offset="100%" stopColor="#38bdf8" stopOpacity="0.0" />
                 </linearGradient>
               </defs>
 
               <path
                 d="M 0 50 Q 80 48, 150 40 T 250 18 T 350 55 T 500 80 L 500 100 L 0 100 Z"
-                fill="url(#forecastGrad)"
+                fill="url(#forecastGradGlass)"
               />
               <path
                 d="M 0 50 Q 80 48, 150 40 T 250 18 T 350 55 T 500 80"
@@ -652,106 +557,82 @@ export const OverviewIntelligenceScreen: React.FC<OverviewIntelligenceScreenProp
                 strokeLinecap="round"
               />
 
-              {/* Milestones */}
-              <circle cx="0" cy="50" r="4" fill="#44e2cd" />
-              <circle cx="250" cy="18" r="5" fill="#ffb4ab" className="animate-pulse" />
-              <circle cx="500" cy="80" r="4" fill="#44e2cd" />
+              <circle cx="0" cy="50" r="4.5" fill="#10b981" className="shadow-lg" />
+              <circle cx="250" cy="18" r="5.5" fill="#ef4444" className="animate-pulse" />
+              <circle cx="500" cy="80" r="4.5" fill="#10b981" />
             </svg>
           </div>
 
-          <div className="flex justify-between items-center font-mono text-[10px] text-[#87929a]">
-            <span>Now (T+0): {pm25CGS.cgsFormatted}</span>
-            <span className="text-[#ffb4ab] font-bold">Tomorrow Peak: ~9.61 × 10⁻¹¹ g/cm³</span>
-            <span className="text-[#44e2cd] font-bold">48h Clean: ~5.83 × 10⁻¹¹ g/cm³</span>
+          <div className="flex justify-between items-center font-mono text-[10px] text-slate-400">
+            <span>Now: {station.pm25.toFixed(1)} µg/m³</span>
+            <span className="text-rose-400 font-semibold">Peak: {peakForecast.pm25} µg/m³</span>
+            <span className="text-emerald-400 font-semibold">Clearing: {reliefForecast.pm25} µg/m³</span>
           </div>
         </div>
-      </section>
+      </Card>
 
-      {/* 5. CLEAN GATEWAY TO ADVANCED TOOLS */}
-      <section className="flex flex-col gap-3">
-        <h2 className="font-sans text-[18px] sm:text-[20px] font-bold text-white tracking-tight flex items-center gap-2">
-          <span className="material-symbols-outlined text-[#38bdf8] text-[22px]">explore</span>
-          Explore Deeper Tools
-        </h2>
+      {/* 7. Explore Platform Sections */}
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3.5">
+        <button
+          type="button"
+          onClick={() => onNavigateTab('forecast-engine')}
+          className="p-4 bg-white/[0.03] hover:bg-white/[0.07] backdrop-blur-xl border border-white/[0.08] hover:border-sky-400/40 rounded-2xl flex flex-col text-left transition-all duration-300 cursor-pointer group shadow-sm hover:-translate-y-1 hover:shadow-xl"
+        >
+          <div className="w-9 h-9 rounded-xl bg-sky-500/15 text-sky-400 flex items-center justify-center mb-2.5 group-hover:scale-110 group-hover:shadow-[0_0_15px_rgba(56,189,248,0.4)] transition-all">
+            <span className="material-symbols-outlined text-[20px]">timeline</span>
+          </div>
+          <span className="text-[14px] font-semibold text-white group-hover:text-sky-300 transition-colors">
+            48-Hour Forecast Engine
+          </span>
+          <span className="text-[12px] text-slate-400 mt-1 leading-relaxed">
+            Hour-by-hour boundary layer evolution, confidence intervals, and wind trajectories.
+          </span>
+          <span className="text-[11px] text-sky-400 font-semibold mt-3 flex items-center gap-1 group-hover:translate-x-1 transition-transform">
+            <span>Open Timeline</span>
+            <span className="material-symbols-outlined text-[14px]">arrow_forward</span>
+          </span>
+        </button>
 
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3.5">
-          {/* Card 1 */}
-          <button
-            onClick={() => onNavigateTab('live-telemetry-sounding')}
-            className="p-4 bg-[#151922] hover:bg-[#1a202c] border border-[#272a30] hover:border-[#38bdf8]/60 rounded-xl flex flex-col text-left transition-all shadow cursor-pointer group"
-          >
-            <div className="w-8 h-8 rounded-lg bg-[#38bdf8]/15 text-[#38bdf8] flex items-center justify-center mb-2.5 group-hover:scale-105 transition-transform">
-              <span className="material-symbols-outlined text-[18px]">sensors</span>
-            </div>
-            <span className="font-sans text-[14px] font-bold text-white group-hover:text-[#38bdf8] transition-colors">
-              Live Sensors & Sounding
-            </span>
-            <span className="font-sans text-[11px] text-[#87929a] mt-1 leading-snug">
-              Atmospheric chamber simulation, optical spectrometry, and lidar profiles.
-            </span>
-            <span className="font-sans text-[11px] text-[#8ed5ff] font-bold mt-3">
-              Open Live Sensors →
-            </span>
-          </button>
+        <button
+          type="button"
+          onClick={() => onNavigateTab('geospatial-grid-stations')}
+          className="p-4 bg-white/[0.03] hover:bg-white/[0.07] backdrop-blur-xl border border-white/[0.08] hover:border-teal-400/40 rounded-2xl flex flex-col text-left transition-all duration-300 cursor-pointer group shadow-sm hover:-translate-y-1 hover:shadow-xl"
+        >
+          <div className="w-9 h-9 rounded-xl bg-teal-500/15 text-teal-400 flex items-center justify-center mb-2.5 group-hover:scale-110 group-hover:shadow-[0_0_15px_rgba(45,212,191,0.4)] transition-all">
+            <span className="material-symbols-outlined text-[20px]">public</span>
+          </div>
+          <span className="text-[14px] font-semibold text-white group-hover:text-teal-300 transition-colors">
+            Interactive World Map
+          </span>
+          <span className="text-[12px] text-slate-400 mt-1 leading-relaxed">
+            Cartographic view of global air quality stations with wind streams and dispersion.
+          </span>
+          <span className="text-[11px] text-teal-400 font-semibold mt-3 flex items-center gap-1 group-hover:translate-x-1 transition-transform">
+            <span>Explore Map</span>
+            <span className="material-symbols-outlined text-[14px]">arrow_forward</span>
+          </span>
+        </button>
 
-          {/* Card 2 */}
-          <button
-            onClick={() => onNavigateTab('forecast-engine')}
-            className="p-4 bg-[#151922] hover:bg-[#1a202c] border border-[#272a30] hover:border-[#44e2cd]/60 rounded-xl flex flex-col text-left transition-all shadow cursor-pointer group"
-          >
-            <div className="w-8 h-8 rounded-lg bg-[#44e2cd]/15 text-[#44e2cd] flex items-center justify-center mb-2.5 group-hover:scale-105 transition-transform">
-              <span className="material-symbols-outlined text-[18px]">timeline</span>
-            </div>
-            <span className="font-sans text-[14px] font-bold text-white group-hover:text-[#44e2cd] transition-colors">
-              48-Hour Forecast Engine
-            </span>
-            <span className="font-sans text-[11px] text-[#87929a] mt-1 leading-snug">
-              Hour-by-hour confidence intervals, weather models, and parameter tuning.
-            </span>
-            <span className="font-sans text-[11px] text-[#44e2cd] font-bold mt-3">
-              Open Forecast Engine →
-            </span>
-          </button>
-
-          {/* Card 3 */}
-          <button
-            onClick={() => onNavigateTab('geospatial-grid-stations')}
-            className="p-4 bg-[#151922] hover:bg-[#1a202c] border border-[#272a30] hover:border-[#8ed5ff]/60 rounded-xl flex flex-col text-left transition-all shadow cursor-pointer group"
-          >
-            <div className="w-8 h-8 rounded-lg bg-[#8ed5ff]/15 text-[#8ed5ff] flex items-center justify-center mb-2.5 group-hover:scale-105 transition-transform">
-              <span className="material-symbols-outlined text-[18px]">public</span>
-            </div>
-            <span className="font-sans text-[14px] font-bold text-white group-hover:text-[#8ed5ff] transition-colors">
-              Worldwide City Map
-            </span>
-            <span className="font-sans text-[11px] text-[#87929a] mt-1 leading-snug">
-              Compare regional air quality across cities worldwide with spatial dispersion.
-            </span>
-            <span className="font-sans text-[11px] text-[#8ed5ff] font-bold mt-3">
-              Open City Map →
-            </span>
-          </button>
-
-          {/* Card 4 */}
-          <button
-            onClick={() => onNavigateTab('explainable-risk-provenance')}
-            className="p-4 bg-[#151922] hover:bg-[#1a202c] border border-[#272a30] hover:border-[#38bdf8]/60 rounded-xl flex flex-col text-left transition-all shadow cursor-pointer group"
-          >
-            <div className="w-8 h-8 rounded-lg bg-[#38bdf8]/15 text-[#38bdf8] flex items-center justify-center mb-2.5 group-hover:scale-105 transition-transform">
-              <span className="material-symbols-outlined text-[18px]">verified_user</span>
-            </div>
-            <span className="font-sans text-[14px] font-bold text-white group-hover:text-[#38bdf8] transition-colors">
-              Why Trust Us (Math & Audit)
-            </span>
-            <span className="font-sans text-[11px] text-[#87929a] mt-1 leading-snug">
-              Step-by-step formula math, zero black box AI, and sensor calibration curves.
-            </span>
-            <span className="font-sans text-[11px] text-[#38bdf8] font-bold mt-3">
-              Verify Math →
-            </span>
-          </button>
-        </div>
-      </section>
+        <button
+          type="button"
+          onClick={() => onNavigateTab('explainable-risk-provenance')}
+          className="p-4 bg-white/[0.03] hover:bg-white/[0.07] backdrop-blur-xl border border-white/[0.08] hover:border-amber-400/40 rounded-2xl flex flex-col text-left transition-all duration-300 cursor-pointer group shadow-sm hover:-translate-y-1 hover:shadow-xl"
+        >
+          <div className="w-9 h-9 rounded-xl bg-amber-500/15 text-amber-400 flex items-center justify-center mb-2.5 group-hover:scale-110 group-hover:shadow-[0_0_15px_rgba(245,158,11,0.4)] transition-all">
+            <span className="material-symbols-outlined text-[20px]">verified</span>
+          </div>
+          <span className="text-[14px] font-semibold text-white group-hover:text-amber-300 transition-colors">
+            Science & Methodology
+          </span>
+          <span className="text-[12px] text-slate-400 mt-1 leading-relaxed">
+            Transparent physical equations, WHO guideline comparisons, and verifiable data provenance.
+          </span>
+          <span className="text-[11px] text-amber-400 font-semibold mt-3 flex items-center gap-1 group-hover:translate-x-1 transition-transform">
+            <span>View Science</span>
+            <span className="material-symbols-outlined text-[14px]">arrow_forward</span>
+          </span>
+        </button>
+      </div>
 
     </div>
   );

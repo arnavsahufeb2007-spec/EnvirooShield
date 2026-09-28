@@ -107,23 +107,23 @@ export const CityCompareModal: React.FC<CityCompareModalProps> = ({
     : 0;
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-4 bg-black/80 backdrop-blur-md animate-fade-in overflow-y-auto">
-      <div className="relative w-full max-w-4xl bg-[#11141c] border border-[#272a30] rounded-2xl shadow-2xl overflow-hidden flex flex-col my-auto max-h-[92vh]">
+    <div className="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-4 bg-black/80 backdrop-blur-xl animate-fade-in overflow-y-auto">
+      <div className="relative w-full max-w-4xl bg-slate-950/90 backdrop-blur-2xl border border-white/[0.12] rounded-2xl shadow-2xl overflow-hidden flex flex-col my-auto max-h-[92vh]">
         
         {/* Modal Header */}
-        <div className="flex items-center justify-between px-5 py-4 border-b border-[#272a30] bg-[#161a24]">
+        <div className="flex items-center justify-between px-5 py-4 border-b border-white/[0.08] bg-white/[0.03]">
           <div className="flex items-center gap-2.5">
-            <div className="w-8 h-8 rounded-lg bg-[#38bdf8]/15 text-[#38bdf8] flex items-center justify-center">
+            <div className="w-8 h-8 rounded-xl bg-teal-400/15 text-teal-400 flex items-center justify-center border border-teal-400/30">
               <span className="material-symbols-outlined text-[20px]">compare_arrows</span>
             </div>
             <div>
               <h2 className="font-sans text-[17px] font-bold text-white tracking-tight flex items-center gap-2">
                 Side-by-Side City Atmospheric Comparison
-                <span className="font-mono text-[10px] text-[#44e2cd] bg-[#44e2cd]/15 px-2 py-0.5 rounded border border-[#44e2cd]/30 font-bold">
+                <span className="font-mono text-[10px] text-teal-300 bg-teal-400/15 px-2 py-0.5 rounded-full border border-teal-400/30 font-bold">
                   LIVE CGS SYNC
                 </span>
               </h2>
-              <p className="font-sans text-[11px] text-[#87929a]">
+              <p className="font-sans text-[11px] text-slate-400">
                 Compare live local clocks, thermal inversion ceilings, particulate densities, and health risks
               </p>
             </div>
@@ -131,7 +131,7 @@ export const CityCompareModal: React.FC<CityCompareModalProps> = ({
 
           <button
             onClick={onClose}
-            className="w-8 h-8 rounded-lg bg-[#1f2430] hover:bg-[#272a30] text-[#87929a] hover:text-white flex items-center justify-center transition-colors cursor-pointer"
+            className="w-8 h-8 rounded-xl bg-white/[0.04] hover:bg-white/[0.1] text-slate-400 hover:text-white flex items-center justify-center transition-all cursor-pointer border border-white/[0.08] hover:border-white/[0.2]"
             aria-label="Close modal"
           >
             <span className="material-symbols-outlined text-[18px]">close</span>
@@ -139,8 +139,8 @@ export const CityCompareModal: React.FC<CityCompareModalProps> = ({
         </div>
 
         {/* Target City Selector Bar */}
-        <div className="px-5 py-3 bg-[#131620] border-b border-[#272a30] flex flex-col sm:flex-row sm:items-center justify-between gap-3">
-          <span className="font-mono text-[11px] text-[#87929a] font-bold uppercase tracking-wider">
+        <div className="px-5 py-3 bg-white/[0.02] border-b border-white/[0.08] flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+          <span className="font-mono text-[11px] text-slate-400 font-semibold uppercase tracking-wider">
             Compare <strong className="text-white">{currentStation.region}</strong> with:
           </span>
 
@@ -154,13 +154,13 @@ export const CityCompareModal: React.FC<CityCompareModalProps> = ({
                 <button
                   key={city.id}
                   onClick={() => setSelectedTargetLoc(city)}
-                  className={`px-2.5 py-1 rounded-lg font-sans text-[11px] font-medium transition-all shrink-0 flex items-center gap-1.5 cursor-pointer ${
+                  className={`px-3 py-1.2 rounded-xl font-sans text-[11px] font-medium transition-all duration-200 shrink-0 flex items-center gap-1.5 cursor-pointer backdrop-blur-md border ${
                     isSelected
-                      ? 'bg-[#38bdf8] text-[#00354a] font-bold shadow-sm'
-                      : 'bg-[#191d28] text-[#cbd5e1] hover:bg-[#252b38] hover:text-white border border-[#272a30]'
+                      ? 'glass-pill-active scale-[1.02]'
+                      : 'glass-pill'
                   }`}
                 >
-                  <span>{city.flag}</span>
+                  <span className="group-hover:scale-110 transition-transform">{city.flag}</span>
                   <span>{city.name}</span>
                 </button>
               );

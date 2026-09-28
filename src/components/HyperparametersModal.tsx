@@ -33,29 +33,29 @@ export const HyperparametersModal: React.FC<HyperparametersModalProps> = ({
   };
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-sm animate-in fade-in duration-150">
-      <div className="bg-[#191c21] border border-[#272a30] rounded-lg max-w-md w-full p-6 shadow-2xl flex flex-col gap-5">
-        <div className="flex items-center justify-between pb-3 border-b border-[#272a30]">
+    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-xl animate-fade-in">
+      <div className="bg-slate-950/90 border border-white/[0.12] rounded-2xl max-w-md w-full p-6 shadow-2xl backdrop-blur-2xl flex flex-col gap-5">
+        <div className="flex items-center justify-between pb-3 border-b border-white/[0.08]">
           <div className="flex items-center gap-2">
-            <span className="material-symbols-outlined text-[#38bdf8] text-[22px]">tune</span>
-            <h3 className="font-sans text-[18px] font-semibold text-[#e1e2ea]">Model Hyperparameters</h3>
+            <span className="material-symbols-outlined text-sky-400 text-[22px]">tune</span>
+            <h3 className="font-sans text-[18px] font-bold text-white tracking-tight">Model Hyperparameters</h3>
           </div>
-          <button onClick={onClose} className="text-[#87929a] hover:text-white transition-colors">
-            <span className="material-symbols-outlined text-[20px]">close</span>
+          <button onClick={onClose} className="w-8 h-8 rounded-xl bg-white/[0.04] hover:bg-white/[0.1] text-slate-400 hover:text-white flex items-center justify-center transition-all cursor-pointer border border-white/[0.08] hover:border-white/[0.2]">
+            <span className="material-symbols-outlined text-[18px]">close</span>
           </button>
         </div>
 
         <form onSubmit={handleApply} className="flex flex-col gap-4 font-mono text-[12px]">
-          <div className="bg-[#111319] p-3 rounded border border-[#272a30] flex flex-col gap-1">
-            <span className="text-[10px] text-[#87929a] uppercase">ACTIVE TOPOLOGY SPEC</span>
-            <span className="text-[#8ed5ff] font-semibold">EnviroForecaster-v1.4-RidgeAR</span>
-            <span className="text-[11px] text-[#bdc8d1]">ECMWF IFS-0.05° Boundary Advection Coupling</span>
+          <div className="bg-white/[0.03] p-3.5 rounded-xl border border-white/[0.08] flex flex-col gap-1 backdrop-blur-md">
+            <span className="text-[10px] text-slate-400 uppercase tracking-wider font-semibold">ACTIVE TOPOLOGY SPEC</span>
+            <span className="text-sky-300 font-bold">EnviroForecaster-v1.4-RidgeAR</span>
+            <span className="text-[11px] text-slate-300">ECMWF IFS-0.05° Boundary Advection Coupling</span>
           </div>
 
           <div className="flex flex-col gap-1.5">
-            <label className="text-[#bdc8d1] flex justify-between">
-              <span>L2 REGULARIZATION PENALTY (λ)</span>
-              <span className="text-[#44e2cd]">λ = {lambdaL2}</span>
+            <label className="text-slate-300 flex justify-between font-sans text-[12px]">
+              <span>L2 Regularization Penalty (λ)</span>
+              <span className="text-teal-300 font-mono font-bold">λ = {lambdaL2}</span>
             </label>
             <input
               type="range"
@@ -64,15 +64,15 @@ export const HyperparametersModal: React.FC<HyperparametersModalProps> = ({
               step="0.001"
               value={lambdaL2}
               onChange={(e) => setLambdaL2(e.target.value)}
-              className="w-full h-1.5 bg-[#272a30] rounded-lg appearance-none cursor-pointer accent-[#38bdf8]"
+              className="w-full h-2 bg-white/[0.08] rounded-lg appearance-none cursor-pointer accent-sky-400 hover:bg-white/[0.12] transition-colors"
             />
-            <span className="text-[10px] text-[#87929a]">Controls coefficient shrinkage on collinear meteorological features.</span>
+            <span className="text-[11px] text-slate-400 font-sans">Controls coefficient shrinkage on collinear meteorological features.</span>
           </div>
 
           <div className="flex flex-col gap-1.5">
-            <label className="text-[#bdc8d1] flex justify-between">
-              <span>STOCHASTIC ENSEMBLE PERTURBATIONS</span>
-              <span className="text-[#8ed5ff]">{perturbations} seeds</span>
+            <label className="text-slate-300 flex justify-between font-sans text-[12px]">
+              <span>Stochastic Ensemble Perturbations</span>
+              <span className="text-sky-300 font-mono font-bold">{perturbations} seeds</span>
             </label>
             <input
               type="range"
@@ -81,15 +81,15 @@ export const HyperparametersModal: React.FC<HyperparametersModalProps> = ({
               step="8"
               value={perturbations}
               onChange={(e) => setPerturbations(Number(e.target.value))}
-              className="w-full h-1.5 bg-[#272a30] rounded-lg appearance-none cursor-pointer accent-[#38bdf8]"
+              className="w-full h-2 bg-white/[0.08] rounded-lg appearance-none cursor-pointer accent-sky-400 hover:bg-white/[0.12] transition-colors"
             />
-            <span className="text-[10px] text-[#87929a]">Spread generates 95% confidence bounds across the 48-hour horizon.</span>
+            <span className="text-[11px] text-slate-400 font-sans">Spread generates 95% confidence bounds across the 48-hour horizon.</span>
           </div>
 
           <div className="flex flex-col gap-1.5">
-            <label className="text-[#bdc8d1] flex justify-between">
-              <span>INVERSION HEIGHT CAP THRESHOLD</span>
-              <span className="text-[#ffb4ab]">{pblThreshold} meters ASL</span>
+            <label className="text-slate-300 flex justify-between font-sans text-[12px]">
+              <span>Inversion Height Cap Threshold</span>
+              <span className="text-rose-300 font-mono font-bold">{pblThreshold} meters ASL</span>
             </label>
             <input
               type="range"
@@ -98,29 +98,29 @@ export const HyperparametersModal: React.FC<HyperparametersModalProps> = ({
               step="10"
               value={pblThreshold}
               onChange={(e) => setPblThreshold(Number(e.target.value))}
-              className="w-full h-1.5 bg-[#272a30] rounded-lg appearance-none cursor-pointer accent-[#ffb4ab]"
+              className="w-full h-2 bg-white/[0.08] rounded-lg appearance-none cursor-pointer accent-rose-400 hover:bg-white/[0.12] transition-colors"
             />
-            <span className="text-[10px] text-[#87929a]">Boundary layer threshold activating the nocturnal subsidence trigger.</span>
+            <span className="text-[11px] text-slate-400 font-sans">Boundary layer threshold activating the nocturnal subsidence trigger.</span>
           </div>
 
           <div className="flex flex-col gap-1.5">
-            <label className="text-[#bdc8d1]">VALIDATION SCHEME</label>
+            <label className="text-slate-300 font-sans text-[12px]">Validation Scheme</label>
             <select
               value={rollingLag}
               onChange={(e) => setRollingLag(e.target.value)}
-              className="bg-[#111319] border border-[#272a30] p-2 rounded text-[#e1e2ea] focus:border-[#38bdf8] outline-none"
+              className="bg-white/[0.04] border border-white/[0.1] p-2.5 rounded-xl text-white focus:border-sky-400 outline-none backdrop-blur-md cursor-pointer hover:border-white/[0.2] transition-colors font-sans text-[12px]"
             >
-              <option>1-Step Rolling Chronological</option>
-              <option>3-Step Block Purged K-Fold</option>
-              <option>Walk-Forward Expanding Window</option>
+              <option className="bg-slate-900 text-white">1-Step Rolling Chronological</option>
+              <option className="bg-slate-900 text-white">3-Step Block Purged K-Fold</option>
+              <option className="bg-slate-900 text-white">Walk-Forward Expanding Window</option>
             </select>
           </div>
 
-          <div className="flex items-center justify-between pt-3 border-t border-[#272a30]">
+          <div className="flex items-center justify-between pt-3 border-t border-white/[0.08]">
             <button
               type="button"
               onClick={handleReset}
-              className="px-3 py-1.5 rounded bg-[#272a30] hover:bg-[#32353b] text-[#bdc8d1] text-[11px] transition-colors"
+              className="px-3.5 py-2 rounded-xl bg-white/[0.04] hover:bg-white/[0.08] border border-white/[0.08] hover:border-white/[0.2] text-slate-300 hover:text-white text-[12px] font-medium transition-all duration-200 hover:-translate-y-0.5 hover:scale-[1.02] cursor-pointer"
             >
               Reset Baseline
             </button>
@@ -128,13 +128,13 @@ export const HyperparametersModal: React.FC<HyperparametersModalProps> = ({
               <button
                 type="button"
                 onClick={onClose}
-                className="px-3 py-1.5 rounded bg-transparent hover:bg-[#272a30] text-[#87929a] text-[11px]"
+                className="px-3.5 py-2 rounded-xl bg-transparent hover:bg-white/[0.06] text-slate-400 hover:text-white text-[12px] transition-all cursor-pointer"
               >
                 Cancel
               </button>
               <button
                 type="submit"
-                className="px-4 py-1.5 rounded bg-[#38bdf8] hover:bg-[#8ed5ff] text-[#004965] font-semibold text-[11px] shadow transition-colors"
+                className="px-4 py-2 rounded-xl bg-gradient-to-r from-sky-400 to-sky-500 hover:from-sky-300 hover:to-sky-400 text-slate-950 font-bold text-[12px] shadow-[0_2px_12px_rgba(56,189,248,0.4)] hover:shadow-[0_4px_20px_rgba(56,189,248,0.5)] transition-all duration-200 hover:-translate-y-0.5 hover:scale-[1.02] cursor-pointer"
               >
                 Re-Train Kernel
               </button>

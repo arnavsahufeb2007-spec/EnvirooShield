@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { NavTab, StationId, StationData, HourlyForecastRow, ToastMessage } from './types';
+import { NavTab, StationId, StationData, HourlyForecastRow, ToastMessage, UnitSystem } from './types';
 import { STATIONS, HOURLY_FORECAST_DATA } from './data/mockData';
 import { fetchGlobalAirQuality, GlobalLocationSearchResult, PRESET_WORLD_CITIES } from './services/airQualityApi';
 import { Header } from './components/Header';
@@ -22,6 +22,7 @@ import { ExplainableRiskScreen } from './screens/ExplainableRiskScreen';
 export default function App() {
   const [activeTab, setActiveTab] = useState<NavTab>('overview-intelligence');
   const [stationId, setStationId] = useState<StationId>('delhi');
+  const [unitSystem, setUnitSystem] = useState<UnitSystem>('standard');
   const [stationDict, setStationDict] = useState<Record<string, StationData>>(STATIONS);
   const [forecastDict, setForecastDict] = useState<Record<string, HourlyForecastRow[]>>({
     delhi: HOURLY_FORECAST_DATA
@@ -119,15 +120,33 @@ export default function App() {
   };
 
   return (
-    <div className="min-h-screen bg-[#111319] text-[#e1e2ea] flex flex-col font-sans selection:bg-[#38bdf8] selection:text-[#004965]">
+    <div className="min-h-screen bg-[#07090e] text-slate-100 flex flex-col font-sans selection:bg-sky-500/20 selection:text-sky-300 relative overflow-x-hidden">
+      {/* Dynamic Atmospheric Glass Glow Orbs */}
+      <div className="fixed inset-0 pointer-events-none overflow-hidden z-0">
+        <div
+          className="absolute -top-32 -left-32 w-[600px] h-[600px] rounded-full blur-[140px] opacity-25 animate-float-slow transition-all duration-1000"
+          style={{
+            backgroundColor:
+              currentStation.pm25 < 35
+                ? '#10b981'
+                : currentStation.pm25 < 75
+                ? '#f59e0b'
+                : '#ef4444'
+          }}
+        />
+        <div className="absolute top-1/4 -right-32 w-[600px] h-[600px] rounded-full bg-sky-500/15 blur-[160px] animate-float-reverse" />
+        <div className="absolute -bottom-32 left-1/3 w-[500px] h-[500px] rounded-full bg-teal-500/10 blur-[150px] animate-float-slow" />
+        <div className="absolute inset-0 bg-[radial-gradient(#ffffff08_1px,transparent_1px)] [background-size:24px_24px] opacity-50" />
+      </div>
+
       {/* Global Precision Header */}
       <Header
         activeTab={activeTab}
         setActiveTab={handleTabChange}
         selectedStation={currentStation}
+        unitSystem={unitSystem}
+        setUnitSystem={setUnitSystem}
         onOpenExport={() => setIsExportOpen(true)}
-        simpleMode={simpleMode}
-        setSimpleMode={setSimpleMode}
         onOpenGuide={() => setIsGuideOpen(true)}
         onOpenCompare={() => setIsCompareOpen(true)}
         onOpenScenarios={() => setIsScenariosOpen(true)}
@@ -138,12 +157,12 @@ export default function App() {
       />
 
       {/* Main Content Area */}
-      <main className="w-full pt-28 sm:pt-32 min-h-screen flex-1">
+      <main className="w-full pt-20 sm:pt-24 min-h-screen flex-1 relative z-10">
         {activeTab === 'overview-intelligence' && (
           <OverviewIntelligenceScreen
             station={currentStation}
             onNavigateTab={handleTabChange}
-            simpleMode={simpleMode}
+            unitSystem={unitSystem}
             onSelectLocation={handleSelectLocation}
             isLoading={isLoadingLocation}
             hourlyForecast={currentForecast}
@@ -153,12 +172,15 @@ export default function App() {
         )}
 
         {activeTab === 'live-telemetry-sounding' && (
-          <LiveTelemetryScreen
+          <OverviewIntelligenceScreen
             station={currentStation}
-            onSelectStation={handleSelectStationById}
-            onOpenCalibration={() => setIsCalibrationOpen(true)}
-            onNotify={addToast}
-            simpleMode={simpleMode}
+            onNavigateTab={handleTabChange}
+            unitSystem={unitSystem}
+            onSelectLocation={handleSelectLocation}
+            isLoading={isLoadingLocation}
+            hourlyForecast={currentForecast}
+            onOpenCompare={() => setIsCompareOpen(true)}
+            onOpenScenarios={() => setIsScenariosOpen(true)}
           />
         )}
 
@@ -168,7 +190,7 @@ export default function App() {
             onOpenHyperparameters={() => setIsHyperparametersOpen(true)}
             onOpenExport={() => setIsExportOpen(true)}
             onNotify={addToast}
-            simpleMode={simpleMode}
+            unitSystem={unitSystem}
             hourlyForecast={currentForecast}
           />
         )}
@@ -179,7 +201,7 @@ export default function App() {
             onSelectStation={handleSelectStationById}
             onOpenSounding={() => setIsSoundingOpen(true)}
             onNotify={addToast}
-            simpleMode={simpleMode}
+            unitSystem={unitSystem}
           />
         )}
 
@@ -188,12 +210,12 @@ export default function App() {
             station={currentStation}
             onOpenCalibration={() => setIsCalibrationOpen(true)}
             onNotify={addToast}
-            simpleMode={simpleMode}
+            unitSystem={unitSystem}
           />
         )}
       </main>
 
-      {/* Global Institutional & Cryptographic Footer */}
+      {/* Global Institutional Footer */}
       <Footer
         onCopyHash={handleCopyHash}
         onSelectStation={handleSelectStationById}
