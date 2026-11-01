@@ -115,6 +115,20 @@ export default function App() {
     }
   };
 
+  const handleSelectMapPoint = (lat: number, lng: number) => {
+    // Use precise coordinates rather than a city preset; every clicked point is independently fetched.
+    const id = `map-${lat.toFixed(5)}-${lng.toFixed(5)}`;
+    handleSelectLocation({
+      id,
+      name: `Selected area (${lat.toFixed(3)}, ${lng.toFixed(3)})`,
+      country: 'Map selection',
+      countryCode: '',
+      lat,
+      lng,
+      elevation: 0
+    });
+  };
+
   const handleCopyHash = (text: string, label: string) => {
     navigator.clipboard.writeText(text);
     addToast('Copied to Clipboard', `${label}: ${text}`);
@@ -218,6 +232,8 @@ export default function App() {
             currentStation={currentStation}
             onSelectStation={handleSelectStationById}
             onOpenSounding={() => setIsSoundingOpen(true)}
+            onSelectMapPoint={handleSelectMapPoint}
+            isLoadingLocation={isLoadingLocation}
             onNotify={addToast}
             unitSystem={unitSystem}
           />
