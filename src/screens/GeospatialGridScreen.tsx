@@ -4,6 +4,7 @@ import { STATIONS } from '../data/mockData';
 import { useStationTime } from '../utils/timezoneUtils';
 import { calculateAQI, getAQICategory, formatTelemetryMetric } from '../utils/aqiUtils';
 import { Card } from '../components/ui/Card';
+import { MapAreaPicker } from '../components/MapAreaPicker';
 
 interface GeospatialGridScreenProps {
   currentStation: StationData;
@@ -12,6 +13,8 @@ interface GeospatialGridScreenProps {
   onNotify: (title: string, description: string) => void;
   unitSystem?: UnitSystem;
   simpleMode?: boolean;
+  onSelectMapPoint: (lat: number, lng: number) => void;
+  isLoadingLocation?: boolean;
 }
 
 interface WorldCityPin {
@@ -29,6 +32,8 @@ export const GeospatialGridScreen: React.FC<GeospatialGridScreenProps> = ({
   currentStation,
   onSelectStation,
   onNotify,
+  onSelectMapPoint,
+  isLoadingLocation = false,
   unitSystem = 'standard'
 }) => {
   const stationTime = useStationTime(currentStation);
@@ -103,9 +108,9 @@ export const GeospatialGridScreen: React.FC<GeospatialGridScreenProps> = ({
       <Card variant="elevated" className="p-4 sm:p-6 flex flex-col gap-4">
         <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
           <div>
-            <h2 className="text-lg font-semibold text-white">Google Maps · {currentStation.region}</h2>
+            <h2 className="text-lg font-semibold text-white">Select an area · {currentStation.region}</h2>
             <p className="mt-1 text-xs text-slate-400">
-              Explore the selected location on an interactive map. AQI figures come from EnviroShield, not Google Maps.
+              Click the map to choose any area and load environmental data. Open the same coordinates in Google Maps using the link.
             </p>
           </div>
           <a
@@ -117,21 +122,12 @@ export const GeospatialGridScreen: React.FC<GeospatialGridScreenProps> = ({
             Open in Google Maps ↗
           </a>
         </div>
-        <div className="overflow-hidden rounded-2xl border border-white/10 bg-[#e8eee9]">
-          <iframe
-            key={`${currentStation.lat},${currentStation.lng}`}
-            title={`Google Maps showing ${currentStation.region}`}
-            src={`https://maps.google.com/maps?q=${encodeURIComponent(`${currentStation.lat},${currentStation.lng}`)}&z=11&output=embed`}
-            className="h-[380px] w-full sm:h-[490px]"
-            loading="lazy"
-            referrerPolicy="no-referrer-when-downgrade"
-            allowFullScreen
-          />
-        </div>
-        <p className="text-xs text-slate-400">
-          Select a city above to recenter the map. Plume, wind-vector and inversion overlays are not displayed because
-          they require separately verified geospatial datasets.
-        </p>
+        <MapAreaPicker
+          lat={currentStation.lat}
+          lng={currentStation.lng}
+          onConfirm={({ lat, lng }) => onSelectMapPoint(lat, lng)}
+          isLoading={isLoadingLocation}
+        />
       </Card>
 
       {/* 3. Station Detail Inspector Panel */}
