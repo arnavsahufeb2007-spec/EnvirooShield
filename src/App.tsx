@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useRef, useState } from 'react';
 import { NavTab, StationId, StationData, HourlyForecastRow, ToastMessage, UnitSystem } from './types';
 import { STATIONS, HOURLY_FORECAST_DATA } from './data/mockData';
 import { fetchGlobalAirQuality, GlobalLocationSearchResult, PRESET_WORLD_CITIES } from './services/airQualityApi';
@@ -31,6 +31,7 @@ export default function App() {
   const [isLoadingLocation, setIsLoadingLocation] = useState(false);
   const [toasts, setToasts] = useState<ToastMessage[]>([]);
   const [simpleMode, setSimpleMode] = useState<boolean>(true);
+  const locationRequestId = useRef(0);
 
   // Modals state
   const [isExportOpen, setIsExportOpen] = useState(false);
@@ -79,10 +80,12 @@ export default function App() {
     );
   };
 
-  const handleSelectLocation = async (loc: GlobalLocationSearchResult) => {
+  const handleSelectLocation = async (loc: GlobalLocationSearchResult, navigateToOverview = false) => {
+    const requestId = ++locationRequestId.current;
     // If we already have live data in dictionary, switch immediately
     if (stationDict[loc.id]) {
       setStationId(loc.id);
+      if (navigateToOverview) setActiveTab('overview-intelligence');
       addToast('Monitoring Station Active', `Viewing telemetry for ${loc.name}, ${loc.country}.`, 'success');
       return;
     }
@@ -93,6 +96,7 @@ export default function App() {
 
     try {
       const result = await fetchGlobalAirQuality(loc);
+      if (requestId !== locationRequestId.current) return;
       setStationDict((prev) => ({
         ...prev,
         [result.station.id]: result.station
@@ -102,16 +106,19 @@ export default function App() {
         [result.station.id]: result.hourlyForecast
       }));
       setStationId(result.station.id);
+      if (navigateToOverview) setActiveTab('overview-intelligence');
       addToast(
         'Global Atmospheric Data Synced',
         `Live data loaded for ${result.station.region}. PM2.5: ${(result.station.pm25 * 1e-12).toExponential(2)} g/cm³ (${result.station.pm25} µg/m³).`,
         'success'
       );
     } catch (err) {
-      console.error('Error fetching global air data:', err);
-      addToast('Data Sync Notice', `Loaded regional baseline telemetry for ${loc.name}.`, 'warning');
+      if (requestId === locationRequestId.current) {
+        console.error('Error fetching global air data:', err);
+        addToast('Data unavailable', `Could not load environmental data for ${loc.name}. Try again.`, 'warning');
+      }
     } finally {
-      setIsLoadingLocation(false);
+      if (requestId === locationRequestId.current) setIsLoadingLocation(false);
     }
   };
 
@@ -126,7 +133,7 @@ export default function App() {
       lat,
       lng,
       elevation: 0
-    });
+    }, true);
   };
 
   const handleCopyHash = (text: string, label: string) => {
