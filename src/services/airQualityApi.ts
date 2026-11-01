@@ -131,6 +131,8 @@ export async function fetchGlobalAirQuality(loc: {
   let resolvedUtcOffsetSeconds: number | undefined = undefined;
 
   let hourlyForecast: HourlyForecastRow[] = [];
+  let hasAirQuality = false;
+  let hasWeather = false;
 
   try {
     const controller = new AbortController();
@@ -146,6 +148,7 @@ export async function fetchGlobalAirQuality(loc: {
     clearTimeout(timeoutId);
 
     if (weatherRes.status === 'fulfilled' && weatherRes.value.ok) {
+      hasWeather = true;
       const wData = await weatherRes.value.json();
       if (wData.timezone) resolvedTimezone = wData.timezone;
       if (wData.timezone_abbreviation) resolvedTimezoneAbbr = wData.timezone_abbreviation;
@@ -164,6 +167,7 @@ export async function fetchGlobalAirQuality(loc: {
     }
 
     if (aqRes.status === 'fulfilled' && aqRes.value.ok) {
+      hasAirQuality = true;
       const aqData = await aqRes.value.json();
       if (!resolvedTimezone && aqData.timezone) resolvedTimezone = aqData.timezone;
       if (!resolvedTimezoneAbbr && aqData.timezone_abbreviation) resolvedTimezoneAbbr = aqData.timezone_abbreviation;
@@ -229,6 +233,10 @@ export async function fetchGlobalAirQuality(loc: {
     }
   } catch (e) {
     console.warn('Live API request failed or timed out. Employing meteorological fallback modeling:', e);
+  }
+
+  if (loc.id?.startsWith('map-') && (!hasAirQuality || !hasWeather)) {
+    throw new Error('Live environmental data unavailable for selected map coordinates');
   }
 
   // Ensure timezone is always resolved
