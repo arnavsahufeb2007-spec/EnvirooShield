@@ -14,6 +14,7 @@ import { DemoScenariosModal, DemoScenario } from './components/DemoScenariosModa
 import { ToastContainer } from './components/Toast';
 
 import { OverviewIntelligenceScreen } from './screens/OverviewIntelligenceScreen';
+import { SimpleDashboardScreen } from './screens/SimpleDashboardScreen';
 import { LiveTelemetryScreen } from './screens/LiveTelemetryScreen';
 import { ForecastEngineScreen } from './screens/ForecastEngineScreen';
 import { GeospatialGridScreen } from './screens/GeospatialGridScreen';
@@ -120,9 +121,9 @@ export default function App() {
   };
 
   return (
-    <div className="min-h-screen bg-[#07090e] text-slate-100 flex flex-col font-sans selection:bg-sky-500/20 selection:text-sky-300 relative overflow-x-hidden">
+    <div className={simpleMode && activeTab === 'overview-intelligence' ? 'min-h-screen bg-[#f6f8f5] text-[#18342b] flex flex-col font-sans relative overflow-x-hidden' : 'min-h-screen bg-[#07090e] text-slate-100 flex flex-col font-sans relative overflow-x-hidden'}>
       {/* Dynamic Atmospheric Glass Glow Orbs */}
-      <div className="fixed inset-0 pointer-events-none overflow-hidden z-0">
+      {!simpleMode && <div className="fixed inset-0 pointer-events-none overflow-hidden z-0">
         <div
           className="absolute -top-32 -left-32 w-[600px] h-[600px] rounded-full blur-[140px] opacity-25 animate-float-slow transition-all duration-1000"
           style={{
@@ -139,6 +140,7 @@ export default function App() {
         <div className="absolute inset-0 bg-[radial-gradient(#ffffff08_1px,transparent_1px)] [background-size:24px_24px] opacity-50" />
       </div>
 
+      }
       {/* Global Precision Header */}
       <Header
         activeTab={activeTab}
@@ -156,9 +158,25 @@ export default function App() {
         }}
       />
 
-      {/* Main Content Area */}
+      {activeTab === 'overview-intelligence' && (
+        <div className="fixed bottom-5 right-5 z-[60] flex rounded-full border border-[#c8d9cd] bg-white p-1 shadow-lg" aria-label="Dashboard view">
+          <button type="button" onClick={() => setSimpleMode(true)} aria-pressed={simpleMode} className={simpleMode ? 'rounded-full bg-[#245c40] px-4 py-2 text-xs font-semibold text-white' : 'rounded-full px-4 py-2 text-xs font-semibold text-[#385f49]'}>Simple</button>
+          <button type="button" onClick={() => setSimpleMode(false)} aria-pressed={!simpleMode} className={!simpleMode ? 'rounded-full bg-[#245c40] px-4 py-2 text-xs font-semibold text-white' : 'rounded-full px-4 py-2 text-xs font-semibold text-[#385f49]'}>Advanced</button>
+        </div>
+      )}
+      {/* Main Content Area */
       <main className="w-full pt-20 sm:pt-24 min-h-screen flex-1 relative z-10">
-        {activeTab === 'overview-intelligence' && (
+        {activeTab === 'overview-intelligence' && simpleMode && (
+          <SimpleDashboardScreen
+            station={currentStation}
+            forecast={currentForecast}
+            onNavigate={handleTabChange}
+            onSelectLocation={handleSelectLocation}
+            onCompare={() => setIsCompareOpen(true)}
+            isLoading={isLoadingLocation}
+          />
+        )}
+        {activeTab === 'overview-intelligence' && !simpleMode && (
           <OverviewIntelligenceScreen
             station={currentStation}
             onNavigateTab={handleTabChange}
