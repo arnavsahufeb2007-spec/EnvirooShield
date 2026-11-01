@@ -164,7 +164,7 @@ export default function App() {
           <button type="button" onClick={() => setSimpleMode(false)} aria-pressed={!simpleMode} className={!simpleMode ? 'rounded-full bg-[#245c40] px-4 py-2 text-xs font-semibold text-white' : 'rounded-full px-4 py-2 text-xs font-semibold text-[#385f49]'}>Advanced</button>
         </div>
       )}
-      {/* Main Content Area */
+      {/* Main Content Area */}
       <main className="w-full pt-20 sm:pt-24 min-h-screen flex-1 relative z-10">
         {activeTab === 'overview-intelligence' && simpleMode && (
           <SimpleDashboardScreen
